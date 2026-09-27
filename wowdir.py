@@ -26,6 +26,9 @@ DISABLED_DIR = "AddOns.disabled"
 TOC_SUFFIXES = {1: ("Vanilla", "Classic"), 2: ("TBC", "BCC", "Classic"), 3: ("Wrath", "WOTLKC", "Classic"),
                 4: ("Cata", "Classic"), 5: ("Mists", "Classic")}
 ALL_TOC_SUFFIXES = {"mainline", "classic", "vanilla", "tbc", "bcc", "wrath", "wotlkc", "cata", "mists", "standard"}
+CURSEFORGE_URL = re.compile(r"curseforge\.com/wow/addons/([a-z0-9][a-z0-9-]*)", re.IGNORECASE)
+WOWI_URL = re.compile(r"wowinterface\.com/downloads/(?:info|download|fileinfo\.php\?id=)(\d+)", re.IGNORECASE)
+GITHUB_URL = re.compile(r"github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?(?:[/#?]|$)", re.IGNORECASE)
 ESCAPES = re.compile(r"\|c(?:[0-9a-fA-F]{8}|n[^:|]*:)|\|r|\|T[^|]*\|t|\|A[^|]*\|a")
 
 
@@ -195,6 +198,23 @@ def pick_toc(folder, major):
     return sorted(tocs.values())[0], False
 
 
+def update_links(fields):
+    """Where an addon says it's published, from packager fields or its website. Preferred source first."""
+    website = fields.get("x-website", "")
+    links = []
+    wowi = fields.get("x-wowi-id", "") or (WOWI_URL.search(website) or [None, ""])[1]
+    if wowi.isdigit():
+        links.append({"source": "wowinterface", "id": wowi})
+    curse = fields.get("x-curse-project-id", "")
+    slug = CURSEFORGE_URL.search(website)
+    if curse.isdigit() or slug:
+        links.append({"source": "curseforge", "id": curse if curse.isdigit() else slug.group(1).lower()})
+    repo = GITHUB_URL.search(website)
+    if repo:
+        links.append({"source": "github", "id": repo.group(1)})
+    return links
+
+
 def split_list(value):
     return [item.strip() for item in re.split(r"[,\s]+", value or "") if item.strip()]
 
@@ -230,6 +250,7 @@ def read_addon(folder, game):
         "loadable": loadable,
         "outOfDate": bool(loadable and target and interfaces and target not in interfaces),
         "loadOnDemand": fields.get("loadondemand", "") == "1",
+        "links": update_links(fields),
     }
 
 

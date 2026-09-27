@@ -47,7 +47,7 @@ Item {
     }
     function act(e) {
         let state = app.entryState(e)
-        if (state === "update") app.execute({action: "update", ids: ["wowi:" + e.id]})
+        if (state === "update") app.update(["wowi:" + e.id])
         else if (state !== "installed") app.installEntry(e)
     }
     function openDetails(e) { entry = e; app.loadDetails(e.id); details.open() }

@@ -17,8 +17,8 @@ Item {
             return (!term || text.indexOf(term) >= 0)
                 && (status === 0 || (status === 1 && a.state !== "disabled") || (status === 2 && a.state !== "enabled")
                     || (status === 3 && root.app.checks[a.id]?.state === "available") || (status === 4 && a.outOfDate))
-                && (origin === 0 || (origin === 1 && a.source === "wowinterface") || (origin === 2 && a.source === "github")
-                    || (origin === 3 && !a.managed) || (origin === 4 && (a.source === "file" || a.source === "url")))
+                && (origin === 0 || (origin === 1 && a.source === "wowinterface") || (origin === 2 && a.source === "curseforge")
+                    || (origin === 3 && a.source === "github") || (origin === 4 && !a.managed) || (origin === 5 && (a.source === "file" || a.source === "url")))
         })
         let sort = sortFilter.currentIndex
         return found.sort((a, b) => {
@@ -61,7 +61,7 @@ Item {
             spacing: 10
             UI.SearchField { id: search; objectName: "installedSearch"; Layout.fillWidth: true; Layout.minimumWidth: 160; placeholderText: "Search installed addons, notes, or folders…" }
             UI.Filter { id: statusFilter; objectName: "statusFilter"; Layout.fillWidth: true; Layout.preferredWidth: 170; Layout.minimumWidth: 120; model: ["Any status", "Enabled", "Disabled", "Update available", "Out of date"] }
-            UI.Filter { id: sourceFilter; objectName: "sourceFilter"; Layout.fillWidth: true; Layout.preferredWidth: 160; Layout.minimumWidth: 120; model: ["All sources", "WoWInterface", "GitHub", "Manual installs", "Zip files"] }
+            UI.Filter { id: sourceFilter; objectName: "sourceFilter"; Layout.fillWidth: true; Layout.preferredWidth: 160; Layout.minimumWidth: 120; model: ["All sources", "WoWInterface", "CurseForge", "GitHub", "Manual installs", "Zip files"] }
             UI.Filter { id: sortFilter; objectName: "installedSort"; Layout.fillWidth: true; Layout.preferredWidth: 180; Layout.minimumWidth: 120; model: ["Name A–Z", "Name Z–A", "Recently installed", "Needs attention", "Most folders"] }
         }
         RowLayout {
@@ -223,21 +223,27 @@ Item {
                         UI.Label {
                             Layout.fillWidth: true
                             text: !detail.addon ? ""
-                                : !detail.addon.managed ? "Installed by hand, so there's no source to update from. Install it from Browse or Add addon to manage updates here."
-                                : detail.addon.source === "file" || detail.addon.source === "url" ? "Installed from a .zip. Install a newer .zip to update it."
-                                : detail.check?.state === "available" ? "Version " + detail.check.latest + " is available."
-                                : detail.check?.state === "current" ? "Up to date."
-                                : detail.check?.state === "error" ? detail.check.message
-                                : "Use Check updates to compare with " + root.app.sourceName(detail.addon.source) + "."
+                                : detail.addon.source === "file" || detail.addon.source === "url" ? "Installed from a .zip, so it isn't checked. Install a newer .zip to update it."
+                                : !detail.addon.links.length ? "Its files don't say where it's published, so it isn't checked. Reinstall it from Browse, or with Add addon from its GitHub or CurseForge page, to get updates."
+                                : detail.check?.state === "available" ? "Version " + detail.check.latest + " is available from " + root.app.sourceName(detail.check.source) + "."
+                                : detail.check?.state === "current" ? "Up to date with " + root.app.sourceName(detail.check.source) + " (" + detail.check.latest + ")."
+                                : detail.check?.state === "error" ? "Couldn't check. " + detail.check.message
+                                : "Not checked yet."
                             color: detail.check?.state === "error" ? UI.Theme.danger : detail.check?.state === "available" ? UI.Theme.accent : UI.Theme.muted
                             font.pixelSize: 12; wrapMode: Text.WordWrap
+                        }
+                        UI.Label {
+                            visible: !!detail.addon && !detail.addon.managed && detail.addon.links.length > 0
+                            Layout.fillWidth: true
+                            text: detail.addon ? "Installed by hand. Checked through " + detail.addon.links.map(l => root.app.sourceName(l.source)).join(", then ") + ", as listed in its files. Updating replaces the folder and tracks it from then on." : ""
+                            color: UI.Theme.muted; font.pixelSize: 11; wrapMode: Text.WordWrap
                         }
                         UI.ActionButton {
                             visible: detail.check?.state === "available"
                             text: "Install update"
                             primary: true
                             enabled: !root.app.busy
-                            onClicked: root.app.execute({action: "update", ids: [detail.addon.id]})
+                            onClicked: root.app.update([detail.addon.id])
                         }
                         Flow {
                             Layout.fillWidth: true

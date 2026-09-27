@@ -1,7 +1,9 @@
 """Addon sources: the WoWInterface catalog, GitHub releases, and .zip archives.
 
-WoWInterface publishes its catalog without an API key. CurseForge and Wago
-require keys, so they're not used.
+WoWInterface publishes its catalog without an API key. CurseForge's own API
+needs one, so single CurseForge projects are looked up through CFWidget, a
+public read-only mirror, and downloaded from CurseForge's CDN. Wago needs a
+key and isn't used.
 """
 import hashlib
 import html
@@ -89,6 +91,13 @@ def compact_catalog(files, categories):
     return entries
 
 
+def same_version(a, b):
+    """Compare versions as authors write them: 'v1.2' and '1.2' match."""
+    def norm(v):
+        return str(v or "").strip().lower().removeprefix("v")
+    return norm(a) == norm(b) and norm(a) != ""
+
+
 def version_key(value):
     return [int(part) if part.isdigit() else 0 for part in value.split(".")]
 
@@ -104,10 +113,10 @@ def load_catalog():
         return None
 
 
-def refresh_catalog(force=False):
-    """Return catalog metadata, downloading a fresh copy when the cache is stale."""
+def refresh_catalog(force=False, max_age=CATALOG_TTL):
+    """Return catalog metadata, downloading a fresh copy when the cache is older than max_age seconds."""
     cached = load_catalog()
-    if cached and not force and time.time() - cached.get("fetchedAt", 0) < CATALOG_TTL:
+    if cached and not force and time.time() - cached.get("fetchedAt", 0) < max_age:
         return describe(cached, "")
     try:
         files = fetch_json(f"{WOWI}/filelist.json")
@@ -240,12 +249,67 @@ def github_release(repo, game):
     }
 
 
+# --- CurseForge (through CFWidget) -----------------------------------------
+
+CURSEFORGE_PAGE = re.compile(r"^https://(?:www\.)?curseforge\.com/wow/addons/([a-z0-9][a-z0-9-]*)/?(?:[?#].*)?$", re.IGNORECASE)
+CFWIDGET = "https://api.cfwidget.com"
+
+
+def curseforge_project(text):
+    match = CURSEFORGE_PAGE.match((text or "").strip())
+    return match.group(1).lower() if match else None
+
+
+def choose_curseforge_file(files, game):
+    """Newest release .zip listing this client's version, else one for the same major version."""
+    releases = [f for f in files if isinstance(f, dict) and f.get("type") == "release" and isinstance(f.get("id"), int)
+                and str(f.get("name", "")).lower().endswith(".zip")]
+    version, major = game.get("version"), str(game.get("major"))
+    exact = [f for f in releases if version and version in (f.get("versions") or [])]
+    related = [f for f in releases if any(str(v).split(".")[0] == major for v in f.get("versions") or [])]
+    pool = exact or related
+    return max(pool, key=lambda f: f.get("uploaded_at") or "") if pool else None
+
+
+def curseforge_release(project, game):
+    project = str(project).lower()
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", project):
+        raise Problem("Unknown CurseForge project.")
+    path = project if project.isdigit() else f"wow/addons/{project}"
+    try:
+        data = fetch_json(f"{CFWIDGET}/{path}")
+    except Problem as error:
+        raise Problem(f"Couldn't look up CurseForge project {project}: {error}")
+    files = data.get("files") if isinstance(data, dict) else None
+    if not isinstance(files, list):
+        raise Problem("CFWidget is still gathering that CurseForge project. Try again in a minute.")
+    title = data.get("title") or project
+    chosen = choose_curseforge_file(files, game)
+    if not chosen:
+        raise Problem(f"CurseForge has no release of {title} for this game version.")
+    page = (data.get("urls") or {}).get("curseforge") or ""
+    slug = CURSEFORGE_PAGE.match(page)
+    file_id = chosen["id"]
+    return {
+        "project": slug.group(1).lower() if slug else project,
+        "title": title,
+        "fileId": file_id,
+        "version": chosen.get("display") or chosen["name"],
+        "size": chosen.get("filesize") or 0,
+        # CurseForge's CDN path: files/<id without last 3 digits>/<last 3 digits, unpadded>/<name>.
+        "download": f"https://edge.forgecdn.net/files/{file_id // 1000}/{file_id % 1000}/{urllib.parse.quote(chosen['name'])}",
+        "url": page or f"https://www.curseforge.com/wow/addons/{project}",
+    }
+
+
 # --- Archives ---------------------------------------------------------------
 
-def download(url, destination, md5=""):
+def download(url, destination, md5="", size=0):
     data = fetch(url, limit=MAX_DOWNLOAD, accept="application/octet-stream, application/zip, */*")
     if md5 and hashlib.md5(data).hexdigest() != md5.lower():
         raise Problem("The download didn't match WoWInterface's checksum. Nothing was installed.")
+    if size and len(data) != size:
+        raise Problem("The download isn't the size CurseForge lists. Nothing was installed.")
     Path(destination).write_bytes(data)
     return destination
 

@@ -19,7 +19,8 @@ App {
         property int attempts: 0
         onTriggered: {
             attempts++
-            if ((app.busy || !app.catalog.length) && attempts < 240) return
+            // Wait for the listing, the catalog, and the automatic update check.
+            if ((app.busy || !app.catalog.length || app.checking || !app.lastChecked) && attempts < 240) return
             stop()
             if (app.failed || !app.game || !app.catalog.length) {
                 console.error("LIVE VERIFY FAILED: " + app.status + " · " + app.catalogMessage)
@@ -28,6 +29,7 @@ App {
             }
             let t = Date.now()
             let shown = app.browseView.results.length
+            console.log("update check: " + JSON.stringify(app.checks))
             console.log("catalog " + app.catalog.length + " entries, " + shown + " for this game, filter+sort " + (Date.now() - t) + " ms, ready after " + (Date.now() - app.started) + " ms")
             app.shot("live-installed", () => {
                 app.page = "browse"

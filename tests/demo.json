@@ -69,7 +69,13 @@
    "sourceId": "TradeLedger",
    "updated": 0,
    "installedAt": "",
-   "path": "/tmp/demo/Interface/AddOns/TradeLedger"
+   "path": "/tmp/demo/Interface/AddOns/TradeLedger",
+   "links": [
+    {
+     "source": "curseforge",
+     "id": "trade-ledger"
+    }
+   ]
   },
   {
    "id": "wowi:9001",
@@ -110,7 +116,13 @@
    "sourceId": "9001",
    "updated": 0,
    "installedAt": "2026-09-20T18:00:00+00:00",
-   "path": "/tmp/demo/Interface/AddOns/QuestCompass"
+   "path": "/tmp/demo/Interface/AddOns/QuestCompass",
+   "links": [
+    {
+     "source": "wowinterface",
+     "id": "9001"
+    }
+   ]
   },
   {
    "id": "github:example/bagsort",
@@ -143,7 +155,13 @@
    "sourceId": "example/bagsort",
    "updated": 0,
    "installedAt": "2026-09-22T18:00:00+00:00",
-   "path": "/tmp/demo/Interface/AddOns/BagSort"
+   "path": "/tmp/demo/Interface/AddOns/BagSort",
+   "links": [
+    {
+     "source": "github",
+     "id": "example/bagsort"
+    }
+   ]
   },
   {
    "id": "wowi:9002",
@@ -176,7 +194,13 @@
    "sourceId": "9002",
    "updated": 0,
    "installedAt": "2026-09-10T18:00:00+00:00",
-   "path": "/tmp/demo/Interface/AddOns/MinimalFrames"
+   "path": "/tmp/demo/Interface/AddOns/MinimalFrames",
+   "links": [
+    {
+     "source": "wowinterface",
+     "id": "9002"
+    }
+   ]
   },
   {
    "id": "local:OldTimers",
@@ -209,17 +233,25 @@
    "sourceId": "OldTimers",
    "updated": 0,
    "installedAt": "",
-   "path": "/tmp/demo/Interface/AddOns/OldTimers"
+   "path": "/tmp/demo/Interface/AddOns/OldTimers",
+   "links": []
   }
  ],
  "checks": {
   "wowi:9001": {
    "state": "available",
-   "latest": "2.5.0"
+   "latest": "2.5.0",
+   "source": "wowinterface"
   },
   "github:example/bagsort": {
    "state": "current",
-   "latest": "v3.2.0"
+   "latest": "v3.2.0",
+   "source": "github"
+  },
+  "local:TradeLedger": {
+   "state": "available",
+   "latest": "340",
+   "source": "curseforge"
   }
  },
  "catalog": [

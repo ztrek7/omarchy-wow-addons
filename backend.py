@@ -79,8 +79,9 @@ def details(request):
 
 
 def resolve_source(request, game):
-    """Describe what to download for a request, as (record, download url, md5, local archive)."""
+    """Work out what to install: (record, {"url", "md5", "size"} to download, or {"path"} of a local .zip)."""
     kind = request.get("source")
+    text = (request.get("location") or "").strip()
     if kind == "wowinterface":
         info = sources.wowi_details(request["id"])
         if not info["download"]:
@@ -88,31 +89,37 @@ def resolve_source(request, game):
         record = {"key": f"wowi:{info['id']}", "source": "wowinterface", "sourceId": info["id"], "name": info["name"],
                   "version": info["version"], "updated": info["updated"], "author": info["author"],
                   "url": f"https://www.wowinterface.com/downloads/info{info['id']}"}
-        return record, info["download"], info["md5"], None
-    text = (request.get("location") or "").strip()
+        return record, {"url": info["download"], "md5": info["md5"]}
+    project = request.get("id") if kind == "curseforge" else sources.curseforge_project(text)
+    if project:
+        release = sources.curseforge_release(project, game)
+        record = {"key": f"curseforge:{release['project']}", "source": "curseforge", "sourceId": release["project"],
+                  "name": release["title"], "version": release["version"], "fileId": release["fileId"], "url": release["url"]}
+        return record, {"url": release["download"], "size": release["size"]}
     path = Path(text).expanduser()
     if text and path.is_file():
-        return {"key": f"file:{path.name}", "source": "file", "sourceId": path.name, "name": path.stem}, "", "", path
+        return {"key": f"file:{path.name}", "source": "file", "sourceId": path.name, "name": path.stem}, {"path": path}
     repo = sources.github_repo(text or request.get("id", "")) if kind in ("github", None, "") else None
     if repo:
         release = sources.github_release(repo, game)
         record = {"key": f"github:{repo.lower()}", "source": "github", "sourceId": repo, "name": repo.split("/")[1],
                   "version": release["tag"], "releaseId": release["releaseId"], "asset": release["asset"],
                   "url": f"https://github.com/{repo}"}
-        return record, release["download"], "", None
+        return record, {"url": release["download"]}
     if text.startswith("https://"):
         name = Path(text.split("?")[0]).name
-        return {"key": f"url:{text}", "source": "url", "sourceId": text, "name": Path(name).stem or "Addon", "url": text}, text, "", None
-    raise Problem("Enter a GitHub repository, an https:// link to a .zip, or the path of a .zip file on this computer.")
+        return {"key": f"url:{text}", "source": "url", "sourceId": text, "name": Path(name).stem or "Addon", "url": text}, {"url": text}
+    raise Problem("Enter a GitHub repository, a CurseForge addon page, an https:// link to a .zip, or the path of a .zip on this computer.")
 
 
 def install_one(request, game, state):
-    record, url, md5, archive = resolve_source(request, game)
+    record, fetch = resolve_source(request, game)
     workspace = library.staging_dir(game)
     try:
+        archive = fetch.get("path")
         if not archive:
             archive = workspace / "download.zip"
-            sources.download(url, archive, md5)
+            sources.download(fetch["url"], archive, fetch.get("md5", ""), fetch.get("size", 0))
         unpacked = workspace / "unpacked"
         unpacked.mkdir()
         staged = sources.extract_addons(archive, unpacked)
@@ -133,50 +140,84 @@ def install(request):
     return {"message": install_one(request, game, library.load_state())}
 
 
+SOURCE_NAMES = {"wowinterface": "WoWInterface", "curseforge": "CurseForge", "github": "GitHub"}
+
+
+def newest(link, row, record, game, catalog):
+    """(latest version, whether it's newer than the installed copy) from one source."""
+    source, ident, installed = link["source"], link["id"], row["tocVersion"]
+    if source == "wowinterface":
+        entry = catalog.get(ident)
+        if not entry:
+            raise Problem("not listed in the WoWInterface catalog.")
+        if record:
+            return entry["version"], entry["updated"] > record.get("updated", 0) or entry["version"] != record.get("version")
+        return entry["version"], not sources.same_version(entry["version"], installed)
+    if source == "curseforge":
+        release = sources.curseforge_release(ident, game)
+        latest, newer = release["version"], record and release["fileId"] != record.get("fileId")
+    else:
+        release = sources.github_release(ident, game)
+        latest, newer = release["tag"], record and release["releaseId"] != record.get("releaseId")
+    # Hand installs have no record, so compare with the version in their TOC.
+    return latest, bool(newer) if record else not sources.same_version(latest, installed)
+
+
 def check(request):
-    """Compare installed WoWInterface and GitHub addons with their sources."""
+    """Look up the newest version of every installed addon with a known source.
+
+    Addons installed here use their recorded source. Hand installs use the
+    sources their TOC declares, trying each until one answers.
+    """
     _, game = current_game()
     state = library.load_state()
-    records = library.packages(state, game)
-    catalog = None
-    if any(r["source"] == "wowinterface" for r in records):
-        sources.refresh_catalog(force=True)
+    rows = [r for r in library.list_addons(game, state) if r["links"]]
+    records = {r["key"]: r for r in library.packages(state, game)}
+    catalog = {}
+    if any(link["source"] == "wowinterface" for r in rows for link in r["links"]):
+        try:
+            sources.refresh_catalog(force=bool(request.get("force")), max_age=3600)
+        except Problem:
+            pass  # Each affected addon reports the catalog as missing.
         catalog = {e["id"]: e for e in (sources.load_catalog() or {}).get("entries", [])}
     checks = {}
-    for record in records:
-        try:
-            if record["source"] == "wowinterface":
-                entry = catalog.get(record["sourceId"])
-                if not entry:
-                    checks[record["key"]] = {"state": "error", "message": "No longer listed on WoWInterface."}
-                elif entry["updated"] > record.get("updated", 0) or entry["version"] != record.get("version"):
-                    checks[record["key"]] = {"state": "available", "latest": entry["version"]}
-                else:
-                    checks[record["key"]] = {"state": "current", "latest": entry["version"]}
-            elif record["source"] == "github":
-                release = sources.github_release(record["sourceId"], game)
-                newer = release["releaseId"] != record.get("releaseId")
-                checks[record["key"]] = {"state": "available" if newer else "current", "latest": release["tag"]}
-        except Problem as error:
-            checks[record["key"]] = {"state": "error", "message": str(error)}
+    for row in rows:
+        problems = []
+        for link in row["links"]:
+            try:
+                latest, newer = newest(link, row, records.get(row["id"]), game, catalog)
+                checks[row["id"]] = {"state": "available" if newer else "current", "latest": latest, "source": link["source"]}
+                break
+            except Problem as error:
+                problems.append(f"{SOURCE_NAMES[link['source']]}: {error}")
+        else:
+            checks[row["id"]] = {"state": "error", "message": " ".join(problems)}
     return {"checks": checks}
 
 
 def update(request):
     _, game = current_game()
     state = library.load_state()
-    records = {r["key"]: r for r in library.packages(state, game)}
+    rows = {r["id"]: r for r in library.list_addons(game, state)}
+    preferred = request.get("sources") or {}
     results = []
     for key in request.get("ids", []):
-        record = records.get(key)
-        if not record or record["source"] not in ("wowinterface", "github"):
-            results.append({"id": key, "ok": False, "message": f"{key}: can't be updated automatically."})
+        row = rows.get(key)
+        if not row or not row["links"]:
+            results.append({"id": key, "ok": False, "message": f"{row['name'] if row else key}: no source to update from."})
             continue
-        try:
-            message = install_one({"source": record["source"], "id": record["sourceId"]}, game, state)
-            results.append({"id": key, "ok": True, "message": message})
-        except Problem as error:
-            results.append({"id": key, "ok": False, "message": f"{record['name']}: {error}"})
+        # Start with the source whose check found the update.
+        links = sorted(row["links"], key=lambda link: link["source"] != preferred.get(key))
+        problems = []
+        for link in links:
+            try:
+                message = install_one({"source": link["source"], "id": link["id"]}, game, state)
+                results.append({"id": key, "ok": True, "message": message})
+                break
+            except Problem as error:
+                problems.append(f"{SOURCE_NAMES[link['source']]}: {error}")
+        else:
+            results.append({"id": key, "ok": False, "message": f"{row['name']}: {' '.join(problems)}"})
     return {"results": results}
 
 

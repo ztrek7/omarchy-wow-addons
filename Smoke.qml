@@ -37,21 +37,23 @@ App {
             app.check(installed.results.length === 5, "all five installed addons listed: " + app.names(installed.results))
             app.check(installed.results[0].name === "BagSort", "sorted by name")
             status.currentIndex = 3
-            app.check(app.names(installed.results) === "Quest Compass", "update filter")
+            app.check(app.names(installed.results) === "Quest Compass, Trade Ledger", "update filter includes hand installs with a source")
             status.currentIndex = 4
             app.check(app.names(installed.results) === "Old Timers", "out of date filter")
             status.currentIndex = 2
             app.check(app.names(installed.results) === "Minimal Frames", "disabled filter")
             status.currentIndex = 0
-            source.currentIndex = 3
+            source.currentIndex = 4
             app.check(app.names(installed.results) === "Old Timers, Trade Ledger", "manual source filter")
+            source.currentIndex = 2
+            app.check(installed.results.length === 0, "CurseForge source filter")
             source.currentIndex = 0
             sort.currentIndex = 1
             app.check(installed.results[0].name === "Trade Ledger", "Z–A sort")
             sort.currentIndex = 2
             app.check(installed.results[0].name === "BagSort", "recently installed sort")
             sort.currentIndex = 3
-            app.check(installed.results[0].name === "Quest Compass" && installed.results[1].name === "Old Timers", "needs attention sort")
+            app.check(app.names(installed.results.slice(0, 3)) === "Quest Compass, Trade Ledger, Old Timers", "needs attention sort")
             sort.currentIndex = 0
             search.text = "COMPASS"
             app.check(app.names(installed.results) === "Quest Compass", "case-insensitive search")
@@ -59,7 +61,10 @@ App {
             app.check(installed.results.length === 1, "search matches folder names")
             search.text = ""
             installed.selectedId = "wowi:9001"
-            app.check(app.updateIds.length === 1, "one update available")
+            app.check(app.updateIds.length === 2, "two updates available")
+            app.check(app.find(app.windowItem, "nav-installed").contentItem.text.indexOf("2 ↑") > 0, "update count in navigation")
+            app.checkUpdates(true)
+            app.check(!app.checking, "demo mode never checks the network")
 
             let browse = app.browseView
             let game = app.find(browse, "gameFilter"), hide = app.find(browse, "hideInstalled")

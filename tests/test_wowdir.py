@@ -61,6 +61,14 @@ class Toc(FakeInstall):
         (folder / "RetailOnly_Mainline.toc").write_text("## Interface: 120100\n")
         self.assertFalse(wowdir.read_addon(folder, self.game)["loadable"])
 
+    def test_update_links(self):
+        folder = make_addon(self.addons, "Boss", **{"X-Curse-Project-ID": "2382", "X-WoWI-ID": "5086", "X-Website": "https://github.com/Example/Boss.git"})
+        self.assertEqual(wowdir.read_addon(folder, self.game)["links"], [
+            {"source": "wowinterface", "id": "5086"}, {"source": "curseforge", "id": "2382"}, {"source": "github", "id": "Example/Boss"}])
+        page = make_addon(self.addons, "Page", **{"X-Website": "https://www.curseforge.com/wow/addons/Page-Addon"})
+        self.assertEqual(wowdir.read_addon(page, self.game)["links"], [{"source": "curseforge", "id": "page-addon"}])
+        self.assertEqual(wowdir.read_addon(make_addon(self.addons, "Plain"), self.game)["links"], [])
+
     def test_bom_and_missing_toc(self):
         folder = self.addons / "Bom"
         folder.mkdir()

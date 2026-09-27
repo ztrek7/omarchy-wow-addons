@@ -60,7 +60,7 @@ Scope {
     function versionText(v) { return !v ? "" : /^\d/.test(v) ? "v" + v : v }
     function monthYear(ms) { return ms ? new Date(ms).toLocaleDateString(Qt.locale(), "MMM yyyy") : "unknown" }
     function sourceName(source) {
-        return ({wowinterface: "WoWInterface", github: "GitHub", url: "Zip link", file: "Zip file", manual: "Manual install"})[source] || source
+        return ({wowinterface: "WoWInterface", curseforge: "CurseForge", github: "GitHub", url: "Zip link", file: "Zip file", manual: "Manual install"})[source] || source
     }
 
     function log(message, error) {
@@ -77,13 +77,28 @@ Scope {
         // A refresh after a change keeps that change's message in the status line.
         if (!followUp) {
             failed = false
-            status = ({list: "Reading your AddOns folder…", check: "Checking WoWInterface and GitHub for updates…", install: "Downloading and installing…",
+            status = ({list: "Reading your AddOns folder…", install: "Downloading and installing…",
                        update: "Installing updates…", remove: "Moving to the trash…", enable: "Enabling…", disable: "Disabling…", configure: "Saving settings…"})[data.action] || "Working…"
         }
         worker.command = ["python3", helper(), JSON.stringify(data)]
         worker.running = true
     }
     function refresh() { execute({action: "list"}) }
+    // Checks only read, so they run beside other work. force skips the catalog
+    // cache; automatic checks reuse a catalog up to an hour old.
+    function checkUpdates(force) {
+        if (demo || checkWorker.running || !game) return
+        checkWorker.output = ""
+        checkWorker.auto = !force
+        if (force) status = "Checking for updates…"
+        checkWorker.command = ["python3", helper(), JSON.stringify({action: "check", force: !!force})]
+        checkWorker.running = true
+    }
+    function update(ids) {
+        let preferred = {}
+        ids.forEach(id => { if (checks[id]?.source) preferred[id] = checks[id].source })
+        execute({action: "update", ids: ids, sources: preferred})
+    }
     function toggle(addon) { execute({action: addon.state === "enabled" ? "disable" : "enable", id: addon.id}) }
     function installEntry(entry) {
         let clashes = entry.dirs.filter(d => folderOwners[d] && folderOwners[d] !== "wowi:" + entry.id)
@@ -135,16 +150,10 @@ Scope {
             if (!game) log("No World of Warcraft install found. Choose its folder in Settings.", true)
             else if (!followUp) status = addons.length + " addons in " + gameLabel() + " · " + enabledCount + " enabled"
             followUp = false
-            return
-        }
-        if (action === "check") {
-            checks = data.checks
-            lastChecked = new Date().toLocaleTimeString()
-            let failures = Object.keys(data.checks).filter(k => data.checks[k].state === "error")
-            failures.forEach(k => log((addons.find(a => a.id === k)?.name || k) + ": " + data.checks[k].message, true))
-            let managed = Object.keys(data.checks).length
-            log(managed ? "Checked " + managed + " addons · " + updateIds.length + " updates available" + (failures.length ? " · " + failures.length + " errors" : "")
-                        : "Nothing to check. Only addons installed from WoWInterface or GitHub can be updated here.", failures.length > 0)
+            if (game && !autoChecked) {
+                autoChecked = true
+                Qt.callLater(() => checkUpdates(false))
+            }
             return
         }
         if (data.results) {
@@ -167,6 +176,22 @@ Scope {
         Qt.callLater(refresh)
     }
     property bool followUp: false
+    function finishCheck(data, auto) {
+        if (!data.ok) { log("Couldn't check for updates. " + (data.error || ""), !auto); return }
+        checks = data.checks
+        lastChecked = new Date().toLocaleTimeString(Qt.locale(), Locale.ShortFormat)
+        let checked = Object.keys(data.checks)
+        let failures = checked.filter(k => data.checks[k].state === "error")
+        failures.forEach(k => log((addons.find(a => a.id === k)?.name || k) + " couldn't be checked. " + data.checks[k].message, true))
+        let count = updateIds.length
+        let summary = !checked.length ? "No addons with an update source to check."
+            : count ? count + (count === 1 ? " update available" : " updates available")
+            : "All " + checked.length + " checked addons are up to date"
+        // Automatic checks don't turn the status red; failures stay listed in Activity.
+        log(summary + (failures.length ? " · " + failures.length + " couldn't be checked (see Activity)" : ""), failures.length > 0 && !auto)
+    }
+    property bool autoChecked: false
+    readonly property bool checking: checkWorker.running
 
     Component.onCompleted: {
         Quickshell.watchFiles = false
@@ -201,6 +226,24 @@ Scope {
             }
         }
         onLoadFailed: app.catalogMessage = "The saved catalog could not be opened. Use Refresh catalog."
+    }
+    // Keep checking while the app stays open.
+    Timer {
+        interval: 6 * 3600 * 1000
+        repeat: true
+        running: !app.demo && !!app.game
+        onTriggered: app.checkUpdates(false)
+    }
+    Process {
+        id: checkWorker
+        property string output: ""
+        property bool auto: false
+        stdout: SplitParser { onRead: data => checkWorker.output += data + "\n" }
+        onExited: {
+            let data
+            try { data = JSON.parse(output) } catch (e) { data = {ok: false, error: "The update helper failed."} }
+            app.finishCheck(data, auto)
+        }
     }
     Process {
         id: worker
@@ -288,7 +331,7 @@ Scope {
                     UI.Label { text: "WOW\nADDONS"; font.pixelSize: 20; font.weight: Font.Bold; font.letterSpacing: 1.8; lineHeight: 1.12; Layout.topMargin: 8 }
                     Item { Layout.preferredHeight: 24 }
                     Repeater {
-                        model: [{key: "installed", name: "▦   Installed"}, {key: "browse", name: "◈   Browse"}, {key: "activity", name: "≡   Activity"}, {key: "settings", name: "⚙   Settings"}]
+                        model: [{key: "installed", name: "▦   Installed" + (app.updateIds.length ? "   ·  " + app.updateIds.length + " ↑" : "")}, {key: "browse", name: "◈   Browse"}, {key: "activity", name: "≡   Activity"}, {key: "settings", name: "⚙   Settings"}]
                         delegate: AbstractButton {
                             id: nav
                             required property var modelData
@@ -330,7 +373,7 @@ Scope {
                         spacing: 10
                         UI.Label { text: ({installed: "Installed", browse: "Browse", activity: "Activity", settings: "Settings"})[app.page]; font.pixelSize: 28; font.weight: Font.DemiBold }
                         Item { Layout.fillWidth: true }
-                        UI.ActionButton { visible: app.page === "installed"; text: "↻  Check updates"; enabled: !app.busy && !!app.game; onClicked: app.execute({action: "check"}) }
+                        UI.ActionButton { objectName: "checkButton"; visible: app.page === "installed"; text: checkWorker.running ? "Checking…" : "↻  Check updates"; enabled: !checkWorker.running && !!app.game; onClicked: app.checkUpdates(true) }
                         UI.ActionButton {
                             objectName: "updateAll"
                             visible: app.page === "installed" && app.updateIds.length > 0
@@ -412,7 +455,7 @@ Scope {
                 }
                 UI.Label {
                     Layout.fillWidth: true
-                    text: app.dialogAction === "add" ? "Paste a GitHub repository, a link to a .zip, or the path of a .zip you downloaded. Packaged releases are picked for " + app.gameLabel() + "."
+                    text: app.dialogAction === "add" ? "Paste a GitHub repository, a CurseForge addon page, a link to a .zip, or the path of a .zip you downloaded. Releases are picked for " + app.gameLabel() + "."
                         : app.dialogAction === "remove" ? "Its " + (app.dialogTarget.dirs?.length || 0) + " folder" + (app.dialogTarget.dirs?.length === 1 ? "" : "s") + " move to the trash, so you can restore them. Settings the addon saved in WTF are kept."
                         : app.dialogAction === "replace" ? (app.dialogTarget.name || "This addon") + " installs folders you already have: " + (app.dialogTarget.clashes || []).join(", ") + ". The current copies move to the trash."
                         : app.updateIds.map(id => "  •  " + (app.addons.find(a => a.id === id)?.name || id) + "  →  " + (app.checks[id]?.latest || "")).join("\n")
@@ -424,7 +467,7 @@ Scope {
                     visible: app.dialogAction === "add"
                     Layout.fillWidth: true
                     implicitHeight: 43
-                    placeholderText: "owner/repo  ·  https://…/addon.zip  ·  ~/Downloads/addon.zip"
+                    placeholderText: "owner/repo  ·  curseforge.com/wow/addons/…  ·  ~/Downloads/addon.zip"
                     onAccepted: { if (confirmButton.enabled) confirmButton.clicked() }
                 }
                 ColumnLayout {
@@ -459,7 +502,7 @@ Scope {
                             if (action === "add") app.execute({action: "install", location: addLocation.text.trim()})
                             else if (action === "remove") app.execute({action: "remove", id: app.dialogTarget.id})
                             else if (action === "replace") app.execute({action: "install", source: "wowinterface", id: app.dialogTarget.id})
-                            else app.execute({action: "update", ids: app.updateIds.slice()})
+                            else app.update(app.updateIds.slice())
                         }
                     }
                 }

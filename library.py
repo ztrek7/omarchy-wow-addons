@@ -19,6 +19,7 @@ DATA = Path(os.environ.get("XDG_DATA_HOME") or wowdir.HOME / ".local/share")
 STATE = DATA / "wow-addons" / "state.json"
 TRASH = DATA / "Trash"
 STAGING_PREFIX = ".wow-addons-staging-"
+UPDATABLE = ("wowinterface", "curseforge", "github")
 
 
 class Problem(Exception):
@@ -124,6 +125,12 @@ def row(key, dirs, present, meta, record):
     entries = [{"name": d, "title": meta[d]["title"], "enabled": present[d][1], "outOfDate": meta[d]["outOfDate"],
                 "loadable": meta[d]["loadable"], "path": str(present[d][0])} for d in sorted(dirs, key=str.lower)]
     record = record or {}
+    if record.get("source") in UPDATABLE:
+        links = [{"source": record["source"], "id": record["sourceId"]}]
+    elif record:
+        links = []  # A .zip install: the user chose that exact file.
+    else:
+        links = info["links"]
     return {
         "id": key,
         "name": record.get("name") or info["title"],
@@ -145,6 +152,8 @@ def row(key, dirs, present, meta, record):
         "updated": record.get("updated", 0),
         "installedAt": record.get("installedAt", ""),
         "path": entries[[e["name"] for e in entries].index(main)]["path"],
+        # Where updates are checked, in order of preference. Hand installs use what their TOC declares.
+        "links": links,
     }
 
 

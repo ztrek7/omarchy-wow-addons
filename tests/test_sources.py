@@ -84,6 +84,51 @@ class GitHub(FakeInstall):
         self.assertIsNone(sources.choose_asset(self.release("notes.txt"), self.game))
 
 
+class CurseForge(FakeInstall):
+    def test_project_parsing(self):
+        self.assertEqual(sources.curseforge_project("https://www.curseforge.com/wow/addons/Auctionator/"), "auctionator")
+        self.assertIsNone(sources.curseforge_project("https://www.curseforge.com/minecraft/mc-mods/x"))
+        self.assertIsNone(sources.curseforge_project("http://www.curseforge.com/wow/addons/x"))
+
+    def test_picks_newest_release_for_client_version(self):
+        files = [
+            {"id": 1, "name": "A-1.zip", "type": "release", "versions": ["1.60.1"], "uploaded_at": "2026-01-01"},
+            {"id": 2, "name": "A-2.zip", "type": "alpha", "versions": ["1.60.1", "1.15.7"], "uploaded_at": "2026-03-01"},
+            {"id": 3, "name": "A-3.zip", "type": "release", "versions": ["1.15.7"], "uploaded_at": "2026-02-01"},
+            {"id": 4, "name": "A-4.zip", "type": "release", "versions": ["12.1.0"], "uploaded_at": "2026-04-01"},
+        ]
+        forever = dict(self.game, version="1.60.1", major=1)
+        self.assertEqual(sources.choose_curseforge_file(files, forever)["id"], 1)
+        self.assertEqual(sources.choose_curseforge_file(files, self.game)["id"], 3)
+        self.assertEqual(sources.choose_curseforge_file(files, dict(self.game, version="5.5.4", major=5)), None)
+
+    def test_release_download_path(self):
+        data = {"title": "Auctionator", "urls": {"curseforge": "https://www.curseforge.com/wow/addons/auctionator"},
+                "files": [{"id": 8939005, "name": "Auctionator 339.zip", "display": "339", "type": "release", "versions": ["1.15.7"],
+                           "filesize": 10, "uploaded_at": "2026-09-21"}]}
+        with patch.object(sources, "fetch_json", return_value=data) as lookup:
+            release = sources.curseforge_release("6124", self.game)
+        self.assertEqual(lookup.call_args[0][0], "https://api.cfwidget.com/6124")
+        self.assertEqual(release["download"], "https://edge.forgecdn.net/files/8939/5/Auctionator%20339.zip")
+        self.assertEqual((release["project"], release["version"], release["size"]), ("auctionator", "339", 10))
+
+    def test_project_still_loading(self):
+        with patch.object(sources, "fetch_json", return_value={"error": "in_queue"}):
+            with self.assertRaises(sources.Problem):
+                sources.curseforge_release("auctionator", self.game)
+
+    def test_size_check(self):
+        with patch.object(sources, "fetch", return_value=b"12345"):
+            sources.download("https://example.invalid/a.zip", self.home / "ok.zip", size=5)
+            with self.assertRaises(sources.Problem):
+                sources.download("https://example.invalid/a.zip", self.home / "bad.zip", size=6)
+
+    def test_same_version(self):
+        self.assertTrue(sources.same_version("v1.2", "1.2 "))
+        self.assertFalse(sources.same_version("", ""))
+        self.assertFalse(sources.same_version("339", "340"))
+
+
 class Archives(FakeInstall):
     def extract(self, files):
         archive = self.home / "a.zip"
