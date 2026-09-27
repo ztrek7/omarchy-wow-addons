@@ -80,8 +80,15 @@ def browse_catalog(request):
     return catalog.refresh(force=bool(request.get("force")))
 
 
+def logos(request):
+    return {"logos": catalog.logos(request.get("slugs") or [], everything=bool(request.get("all")))}
+
+
 def details(request):
-    return {"details": sources.details(request.get("source", "wowinterface"), request["id"])}
+    source, ident = request.get("source", "wowinterface"), request["id"]
+    info = sources.details(source, catalog.curseforge_id(ident) if source == "curseforge" else ident)
+    # Keep the id the window asked for, so it can match the answer.
+    return {"details": dict(info, id=str(ident))}
 
 
 def resolve_source(request, game):
@@ -103,9 +110,10 @@ def resolve_source(request, game):
         return record, {"url": info["download"], "md5": info["md5"]}
     project = request.get("id") if kind == "curseforge" else sources.curseforge_project(text)
     if project:
-        release = sources.curseforge_release(project, game)
+        release = sources.curseforge_release(catalog.curseforge_id(project), game, catalog.curseforge_updated(project))
         record = {"key": f"curseforge:{release['project']}", "source": "curseforge", "sourceId": release["project"],
-                  "name": release["title"], "version": release["version"], "fileId": release["fileId"], "url": release["url"]}
+                  "projectId": release.get("projectId", ""), "name": release["title"], "version": release["version"],
+                  "fileId": release["fileId"], "url": release["url"]}
         return record, {"url": release["download"], "size": release["size"]}
     path = Path(text).expanduser()
     if text and path.is_file():
@@ -144,7 +152,7 @@ def fits(ref, game):
 
 
 def requirement_source(folder, entries, game):
-    """The catalog listing that provides an addon folder, and the site to get it from."""
+    """The catalog listing that provides an addon folder, and its sites, best first."""
     wanted = folder.lower()
     candidates = [e for e in entries if wanted in (d.lower() for d in e["dirs"])]
     refs = lambda e: [r for r in e["sources"] if r["source"] in catalog.SOURCES]
@@ -154,8 +162,7 @@ def requirement_source(folder, entries, game):
     # Prefer the listing named after the folder (DBM-Core -> "Deadly Boss Mods (DBM-Core)"), then one for this game, then the most used.
     entry = max(candidates, key=lambda e: (catalog.norm(folder) in catalog.norm(e["name"]) or e["dirs"][0].lower() == wanted,
                                            any(fits(r, game) for r in refs(e)), sum(r.get("downloads", 0) for r in refs(e))))
-    ref = max(refs(entry), key=lambda r: (fits(r, game), r.get("updated", 0)))
-    return entry, ref
+    return entry, sorted(refs(entry), key=lambda r: (fits(r, game), r.get("updated", 0)), reverse=True)
 
 
 def add_requirements(game, state, keys):
@@ -183,15 +190,15 @@ def add_requirements(game, state, keys):
             entries = catalog.load_entries()
         for row, folder in missing:
             tried.add(folder.lower())
-            entry, ref = requirement_source(folder, entries, game)
+            entry, ranked = requirement_source(folder, entries, game)
             if not entry:
                 notes.append(f"{row['name']} needs {folder}, which isn't on CurseForge or WoWInterface.")
                 continue
-            if (ref["source"], ref["id"]) in fetched:
+            if entry["key"] in fetched:
                 continue  # One listing often provides several required folders.
-            fetched.add((ref["source"], ref["id"]))
+            fetched.add(entry["key"])
             try:
-                _, key = install_one({"source": ref["source"], "id": ref["id"]}, game, state)
+                _, key = install_first([{"source": r["source"], "id": r["id"]} for r in ranked], game, state)
                 keys.add(key)
                 notes.append(f"Also installed {entry['name']}, which {row['name']} requires.")
             except Problem as error:
@@ -199,10 +206,28 @@ def add_requirements(game, state, keys):
     return notes
 
 
+def install_first(choices, game, state):
+    """Install from the first site that works. Returns (message, key); raises the first site's problem if none do."""
+    problems = []
+    for choice in choices:
+        try:
+            message, key = install_one(choice, game, state)
+        except Problem as error:
+            problems.append((choice, error))
+            continue
+        if problems:
+            first, error = problems[0]
+            message += f" ({SOURCE_NAMES.get(first.get('source'), 'The first site')} didn't work: {error})"
+        return message, key
+    raise problems[0][1]
+
+
 def install(request):
+    """Install an addon. From Browse, the addon's other site is tried if the first one fails."""
     _, game = current_game()
     state = library.load_state()
-    message, key = install_one(request, game, state)
+    choices = [request] + [dict(alt) for alt in request.get("alternatives") or [] if alt.get("source") in SOURCE_NAMES]
+    message, key = install_first(choices, game, state)
     return {"message": " ".join([message] + add_requirements(game, state, [key]))}
 
 
@@ -225,11 +250,35 @@ def newest(link, row, record, game, wowi):
         if record:
             return entry["version"], entry["updated"] > record.get("updated", 0) or entry["version"] != record.get("version")
         return entry["version"], not sources.same_version(entry["version"], installed)
-    release = sources.curseforge_release(ident, game)
+    project = (record or {}).get("projectId") or ident
+    release = sources.curseforge_release(catalog.curseforge_id(project), game, catalog.curseforge_updated(project))
     if record:
         return release["version"], release["fileId"] != record.get("fileId")
     # Hand installs have no record, so compare with the version in their TOC.
     return release["version"], not sources.same_version(release["version"], installed)
+
+
+def other_sites(entries):
+    """(source, id) -> the same addon's listings on the other site, from the catalog."""
+    index = {}
+    for entry in entries:
+        refs = [r for r in entry["sources"] if r["source"] in SOURCE_NAMES]
+        for r in refs:
+            others = [{"source": o["source"], "id": o["id"]} for o in refs if o["source"] != r["source"]]
+            for ident in (r["id"], r.get("numericId")):
+                if ident:
+                    index[(r["source"], str(ident).lower())] = others
+    return index
+
+
+def with_fallbacks(row, index):
+    """An addon's own site first, then the same addon on the other site, in case the first can't answer."""
+    links = list(row["links"])
+    for link in list(links):
+        for other in index.get((link["source"], str(link["id"]).lower()), []):
+            if all(other["source"] != l["source"] for l in links):
+                links.append(other)
+    return links
 
 
 def check(request):
@@ -242,8 +291,9 @@ def check(request):
     state = library.load_state()
     rows = [r for r in library.list_addons(game, state) if r["links"]]
     records = {r["key"]: r for r in library.packages(state, game)}
+    index = other_sites(catalog.load_entries())
     wowi = {}
-    if any(link["source"] == "wowinterface" for r in rows for link in r["links"]):
+    if any(link["source"] == "wowinterface" for r in rows for link in with_fallbacks(r, index)):
         try:
             catalog.refresh(force=bool(request.get("force")), max_age=3600)
         except Problem:
@@ -252,9 +302,12 @@ def check(request):
     checks = {}
     for row in rows:
         problems = []
-        for link in row["links"]:
+        for link in with_fallbacks(row, index):
+            # An install record only describes the site it came from; elsewhere, compare with the installed version.
+            record = records.get(row["id"])
+            record = record if record and record["source"] == link["source"] else None
             try:
-                latest, newer = newest(link, row, records.get(row["id"]), game, wowi)
+                latest, newer = newest(link, row, record, game, wowi)
                 checks[row["id"]] = {"state": "available" if newer else "current", "latest": latest, "source": link["source"]}
                 break
             except Problem as error:
@@ -268,6 +321,7 @@ def update(request):
     _, game = current_game()
     state = library.load_state()
     rows = {r["id"]: r for r in library.list_addons(game, state)}
+    index = other_sites(catalog.load_entries())
     preferred = request.get("sources") or {}
     results = []
     for key in request.get("ids", []):
@@ -276,7 +330,7 @@ def update(request):
             results.append({"id": key, "ok": False, "message": f"{row['name'] if row else key}: no source to update from."})
             continue
         # Start with the source whose check found the update.
-        links = sorted(row["links"], key=lambda link: link["source"] != preferred.get(key))
+        links = sorted(with_fallbacks(row, index), key=lambda link: link["source"] != preferred.get(key))
         problems = []
         for link in links:
             try:
@@ -291,7 +345,7 @@ def update(request):
 
 
 ACTIONS = {"list": overview, "configure": configure, "enable": toggle, "disable": toggle, "remove": remove,
-           "catalog": browse_catalog, "details": details, "install": install, "requirements": requirements, "check": check, "update": update}
+           "catalog": browse_catalog, "details": details, "logos": logos, "install": install, "requirements": requirements, "check": check, "update": update}
 
 
 def main():

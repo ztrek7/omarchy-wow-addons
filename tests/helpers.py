@@ -64,4 +64,8 @@ class FakeInstall(unittest.TestCase):
             patcher = patch.object(target, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
+        # Tests never touch the network; anything not mocked fails loudly.
+        offline = patch("urllib.request.urlopen", side_effect=AssertionError("network access in a test"))
+        offline.start()
+        self.addCleanup(offline.stop)
         self.game = wowdir.resolve()["flavor"]

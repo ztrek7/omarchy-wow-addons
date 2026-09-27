@@ -26,6 +26,10 @@ Scope {
     property var catalogInfo: ({})
     property string catalogMessage: ""
     property var details: ({})
+    // CurseForge logos by project slug. The catalog has none, so they're fetched for cards on screen.
+    property var cfLogos: ({})
+    property var logoQueue: []
+    property var logoTried: ({})
     property string detailsId: ""
     property string detailsError: ""
 
@@ -130,12 +134,35 @@ Scope {
         if (row) return checks[row]?.state === "available" ? "update" : "installed"
         return entry.dirs.some(d => folderOwners[d]) ? "replace" : "install"
     }
-    function installEntry(entry, ref) {
+    // alternatives: other sites to try, in order, if the first one can't deliver.
+    function installEntry(entry, ref, alternatives) {
         if (!ref) return
         let row = installedRowFor(entry)
         let clashes = entry.dirs.filter(d => folderOwners[d] && folderOwners[d] !== row)
-        if (clashes.length) confirm("replace", {name: entry.name, clashes: clashes, ref: ref})
-        else execute({action: "install", source: ref.source, id: ref.id})
+        let request = {action: "install", source: ref.source, id: ref.id, alternatives: (alternatives || []).map(r => ({source: r.source, id: r.id}))}
+        if (clashes.length) confirm("replace", {name: entry.name, clashes: clashes, request: request})
+        else execute(request)
+    }
+    function wantLogo(slug) {
+        if (demo || !slug || cfLogos[slug] || logoTried[slug] || logoQueue.indexOf(slug) >= 0) return
+        logoQueue = logoQueue.concat([slug])
+        logoTimer.restart()
+    }
+    // A card scrolled away before its turn; don't fetch its logo.
+    function dropLogo(slug) {
+        if (logoQueue.indexOf(slug) >= 0) logoQueue = logoQueue.filter(s => s !== slug)
+    }
+    function fetchLogos(everything) {
+        if (logoWorker.running || (!everything && !logoQueue.length)) return
+        // Newest requests first: those are the cards on screen now.
+        let batch = everything ? [] : logoQueue.slice(-12).reverse()
+        logoQueue = logoQueue.filter(s => batch.indexOf(s) < 0)
+        let tried = Object.assign({}, logoTried)
+        batch.forEach(s => tried[s] = true)
+        logoTried = tried
+        logoWorker.output = ""
+        logoWorker.command = ["python3", helper(), JSON.stringify({action: "logos", slugs: batch, all: !!everything})]
+        logoWorker.running = true
     }
     function setSource(name, on) {
         let next = Object.assign({}, sourceOn)
@@ -237,6 +264,7 @@ Scope {
         else {
             refresh()
             loadCatalog(false)
+            fetchLogos(true)  // Logos remembered from earlier sessions.
         }
     }
     FileView {
@@ -285,6 +313,19 @@ Scope {
         }
     }
     Process { id: configWorker }
+    Timer { id: logoTimer; interval: 250; onTriggered: app.fetchLogos(false) }
+    Process {
+        id: logoWorker
+        property string output: ""
+        stdout: SplitParser { onRead: data => logoWorker.output += data + "\n" }
+        onExited: {
+            try {
+                let data = JSON.parse(output)
+                if (data.ok) app.cfLogos = Object.assign({}, app.cfLogos, data.logos)
+            } catch (e) {}
+            if (app.logoQueue.length) logoTimer.restart()
+        }
+    }
     Process {
         id: worker
         stdout: SplitParser { onRead: data => app.output += data + "\n" }
@@ -544,7 +585,7 @@ Scope {
                             dialog.close()
                             if (action === "add") app.execute({action: "install", location: addLocation.text.trim()})
                             else if (action === "remove") app.execute({action: "remove", id: app.dialogTarget.id})
-                            else if (action === "replace") app.execute({action: "install", source: app.dialogTarget.ref.source, id: app.dialogTarget.ref.id})
+                            else if (action === "replace") app.execute(app.dialogTarget.request)
                             else app.update(app.updateIds.slice())
                         }
                     }

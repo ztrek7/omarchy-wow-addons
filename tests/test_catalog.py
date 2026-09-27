@@ -123,6 +123,22 @@ class Refresh(FakeInstall):
         fetch.assert_not_called()  # Rebuilt from the saved source lists.
         self.assertEqual(result["count"], 1)
 
+    def test_curseforge_projects_are_looked_up_by_number(self):
+        with patch.object(sources, "fetch_json", side_effect=self.fake):
+            catalog.refresh()
+        self.assertEqual(catalog.curseforge_id("TomTom"), "1")
+        self.assertEqual(catalog.curseforge_id("2382"), "2382")
+        self.assertEqual(catalog.curseforge_id("unlisted"), "unlisted")
+        looked_up = []
+        def widget(ident):
+            looked_up.append(ident)
+            return {"thumbnail": "https://media.forgecdn.net/x.png"}
+        with patch.object(sources, "cfwidget", side_effect=widget):
+            self.assertEqual(catalog.logos(["tomtom", "Bad Slug!"]), {"tomtom": "https://media.forgecdn.net/x.png"})
+            self.assertEqual(catalog.logos(["tomtom"]), {"tomtom": "https://media.forgecdn.net/x.png"})
+        self.assertEqual(looked_up, ["1"])  # By number, and only once.
+        self.assertEqual(catalog.logos([], everything=True), {"tomtom": "https://media.forgecdn.net/x.png"})
+
     def test_nothing_loaded(self):
         with patch.object(sources, "fetch_json", side_effect=sources.Problem("offline")):
             with self.assertRaises(sources.Problem):

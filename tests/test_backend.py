@@ -146,11 +146,11 @@ class Backend(FakeInstall):
     def test_install_brings_required_addons(self):
         module = make_zip({"DBM-Raids/DBM-Raids.toc": toc("Raids", Dependencies="DBM-Core, DBM-GUI, Blizzard_Calendar")})
         core = make_zip({"DBM-Core/DBM-Core.toc": toc("Core", RequiredDeps="LibFoo"), "DBM-GUI/DBM-GUI.toc": toc("GUI")})
-        dbm = {"name": "DBM - Deadly Boss Mods (DBM-Core)", "dirs": ["DBM-Core", "DBM-GUI"],
+        dbm = {"key": "curseforge:deadly-boss-mods", "name": "DBM - Deadly Boss Mods (DBM-Core)", "dirs": ["DBM-Core", "DBM-GUI"],
                "sources": [{"source": "curseforge", "id": "deadly-boss-mods", "flavours": ["vanilla_classic"], "updated": 5, "downloads": 9}]}
-        other = {"name": "Someone's DBM skin", "dirs": ["DBM-Core", "Skin"], "sources": [{"source": "wowinterface", "id": "1", "gameVersions": ["1.15.7"], "updated": 9, "downloads": 1}]}
+        other = {"key": "wowinterface:1", "name": "Someone's DBM skin", "dirs": ["DBM-Core", "Skin"], "sources": [{"source": "wowinterface", "id": "1", "gameVersions": ["1.15.7"], "updated": 9, "downloads": 1}]}
         archives = {"raids": module, "deadly-boss-mods": core}
-        def release(project, game):
+        def release(project, game, listed_updated=0):
             return self.curse("1", size=len(archives[project]), project=project)
         downloads = []
         def fetch(url, **kwargs):
@@ -182,6 +182,36 @@ class Backend(FakeInstall):
         data = self.call(action="requirements", id="local:Plugin")
         self.assertIn("Turned on Core, which Plugin requires.", data["message"])
         self.assertTrue((self.addons / "Core").is_dir())
+
+    def test_falls_back_to_the_other_site(self):
+        data = make_zip({"BigWigs/BigWigs.toc": toc("BigWigs", Version="v425.7")})
+        details = {"id": "5086", "name": "BigWigs", "version": "v425.7", "updated": 1, "download": "https://cdn.wowinterface.com/x", "md5": "", "author": "a"}
+        stale = sources.Problem("CFWidget's copy of BigWigs is out of date (its newest file is from May 12, 2022), so it can't be installed from CurseForge right now.")
+        with patch.object(sources, "curseforge_release", side_effect=stale), patch.object(sources, "wowi_details", return_value=details), \
+                patch.object(sources, "fetch", return_value=data):
+            result = self.call(action="install", source="curseforge", id="bigwigs", alternatives=[{"source": "wowinterface", "id": "5086"}])
+        self.assertTrue(result["ok"], result)
+        self.assertIn("Installed BigWigs v425.7", result["message"])
+        self.assertIn("CurseForge didn't work: CFWidget's copy of BigWigs is out of date", result["message"])
+        self.assertEqual(self.call(action="list")["addons"][0]["id"], "wowi:5086")
+        with patch.object(sources, "curseforge_release", side_effect=stale):
+            result = self.call(action="install", source="curseforge", id="bigwigs")
+        self.assertFalse(result["ok"])
+        self.assertIn("out of date", result["error"])
+
+    def test_stale_curseforge_install_updates_from_wowinterface(self):
+        data = make_zip({"DBM-Core/DBM-Core.toc": toc("DBM", Version="12.1.0")})
+        with patch.object(sources, "curseforge_release", return_value=self.curse("12.1.0", size=len(data), project="deadly-boss-mods")), \
+                patch.object(sources, "fetch", return_value=data):
+            self.call(action="install", source="curseforge", id="deadly-boss-mods")
+        entries = [{"key": "curseforge:deadly-boss-mods", "name": "DBM", "dirs": ["DBM-Core"], "sources": [
+            {"source": "curseforge", "id": "deadly-boss-mods", "numericId": "3358"}, {"source": "wowinterface", "id": "8814"}]}]
+        stale = sources.Problem("CFWidget's copy of DBM is out of date.")
+        with self.catalog_with(*entries), patch.object(catalog, "refresh"), patch.object(sources, "curseforge_release", side_effect=stale), \
+                patch.object(catalog, "source_entries", return_value=[{"id": "8814", "version": "12.1.1", "updated": 5}]):
+            check = self.call(action="check")["checks"]["curseforge:deadly-boss-mods"]
+        # Compared with the installed version, not the CurseForge record.
+        self.assertEqual(check, {"state": "available", "latest": "12.1.1", "source": "wowinterface"})
 
     def test_bad_location(self):
         data = self.call(action="install", location="nothing here")

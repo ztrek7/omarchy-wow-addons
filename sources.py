@@ -5,6 +5,7 @@ repositories or links. Neither needs an API key: WoWInterface publishes an
 open API, and CurseForge projects are read from CFWidget, a public mirror of
 CurseForge's data, with files downloaded from CurseForge's own CDN.
 """
+import datetime
 import hashlib
 import html
 import json
@@ -17,6 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+import zlib
 
 import wowdir
 from library import Problem
@@ -33,13 +35,20 @@ MAX_FILES = 40000
 def fetch(url, limit=64 * 1024 * 1024, accept="application/json"):
     if urllib.parse.urlsplit(url).scheme != "https":
         raise Problem("Only HTTPS downloads are allowed.")
-    headers = {"User-Agent": USER_AGENT, "Accept": accept}
+    # Ask for compressed JSON: CurseForge project data shrinks about tenfold.
+    headers = {"User-Agent": USER_AGENT, "Accept": accept, "Accept-Encoding": "gzip"}
     request = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=45) as response:
             if urllib.parse.urlsplit(response.geturl()).scheme != "https":
                 raise Problem("The download redirected away from HTTPS.")
             data = response.read(limit + 1)
+            if response.headers.get("Content-Encoding", "").lower() == "gzip" and len(data) <= limit:
+                try:
+                    # Cap the unpacked size too, so a small response can't expand without bound.
+                    data = zlib.decompressobj(16 + zlib.MAX_WBITS).decompress(data, limit + 1)
+                except zlib.error:
+                    raise Problem(f"{urllib.parse.urlsplit(url).hostname} sent a damaged response.")
     except urllib.error.HTTPError as error:
         raise Problem(f"{urllib.parse.urlsplit(url).hostname} answered {error.code} {error.reason}.")
     except (urllib.error.URLError, TimeoutError, OSError) as error:
@@ -187,14 +196,23 @@ def curseforge_project(text):
 
 
 def choose_curseforge_file(files, game):
-    """Newest release .zip listing this client's version, else one for the same major version."""
+    """Newest release .zip for this client: its exact version, else the same game (e.g. any WoW Forever
+    patch), else the same major version for addons not listed for this game at all."""
     releases = [f for f in files if isinstance(f, dict) and f.get("type") == "release" and isinstance(f.get("id"), int)
                 and str(f.get("name", "")).lower().endswith(".zip")]
-    version, major = game.get("version"), str(game.get("major"))
+    version, major, flavour = game.get("version"), str(game.get("major")), game.get("flavour")
     exact = [f for f in releases if version and version in (f.get("versions") or [])]
+    same_game = [f for f in releases if flavour and any(wowdir.game_flavour(str(v)) == flavour for v in f.get("versions") or [])]
     related = [f for f in releases if any(str(v).split(".")[0] == major for v in f.get("versions") or [])]
-    pool = exact or related
+    pool = exact or same_game or related
     return max(pool, key=lambda f: f.get("uploaded_at") or "") if pool else None
+
+
+def iso_ms(value):
+    try:
+        return int(datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp() * 1000)
+    except ValueError:
+        return 0
 
 
 def cfwidget(project):
@@ -211,11 +229,24 @@ def cfwidget(project):
     return data
 
 
-def curseforge_release(project, game):
+STALE_AFTER = 3 * 86400 * 1000
+
+
+def curseforge_release(project, game, listed_updated=0):
+    """The file to install from a CurseForge project.
+
+    listed_updated is when the catalog last saw the project change. CFWidget's
+    copy of a few projects stops updating; if its newest file is well behind
+    that date, refuse rather than install an old version.
+    """
     project = str(project).lower()
     data = cfwidget(project)
     files = data["files"]
     title = data.get("title") or project
+    newest = max((iso_ms(f.get("uploaded_at")) for f in files if isinstance(f, dict)), default=0)
+    if listed_updated and newest < listed_updated - STALE_AFTER:
+        seen = time.strftime("%B %-d, %Y", time.localtime(newest / 1000)) if newest else "never"
+        raise Problem(f"CFWidget's copy of {title} is out of date (its newest file is from {seen}), so it can't be installed from CurseForge right now.")
     chosen = choose_curseforge_file(files, game)
     if not chosen:
         raise Problem(f"CurseForge has no release of {title} for this game version.")
@@ -224,6 +255,7 @@ def curseforge_release(project, game):
     file_id = chosen["id"]
     return {
         "project": slug.group(1).lower() if slug else project,
+        "projectId": str(data.get("id") or ""),
         "title": title,
         "fileId": file_id,
         "version": chosen.get("display") or chosen["name"],

@@ -6,6 +6,14 @@ import "."
 // Set VERIFY_SHOTS to a folder to save screenshots.
 App {
     id: app
+    function find(item, name) {
+        if (item.objectName === name) return item
+        for (let child of item.children || []) {
+            let match = find(child, name)
+            if (match) return match
+        }
+        return null
+    }
     property double started: Date.now()
     function shot(name, next) {
         let folder = Quickshell.env("VERIFY_SHOTS")
@@ -40,8 +48,26 @@ App {
     // Give catalog thumbnails time to arrive before the capture.
     Timer {
         id: browseShot
-        interval: 3000
-        onTriggered: app.shot("live-browse", () => {
+        interval: 6000
+        onTriggered: app.shot("live-browse", () => scrollShot.start())
+    }
+    // Scroll down a few screens and check logos follow.
+    Timer {
+        id: scrollShot
+        interval: 10
+        property int before: 0
+        onTriggered: {
+            before = Object.keys(app.cfLogos).length
+            let grid = app.find(app.browseView, "browseGrid")
+            grid.contentY = grid.contentHeight / 20
+            afterScroll.start()
+        }
+    }
+    Timer {
+        id: afterScroll
+        interval: 6000
+        onTriggered: app.shot("live-browse-scrolled", () => {
+            console.log("CurseForge logos: " + scrollShot.before + " at the top, " + Object.keys(app.cfLogos).length + " after scrolling")
             console.log("LIVE VERIFY PASSED: " + app.addons.length + " addons in " + app.gameLabel())
             Qt.quit()
         })

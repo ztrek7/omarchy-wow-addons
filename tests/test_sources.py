@@ -57,7 +57,11 @@ class CurseForge(FakeInstall):
         forever = dict(self.game, version="1.60.1", major=1)
         self.assertEqual(sources.choose_curseforge_file(files, forever)["id"], 1)
         self.assertEqual(sources.choose_curseforge_file(files, self.game)["id"], 3)
-        self.assertEqual(sources.choose_curseforge_file(files, dict(self.game, version="5.5.4", major=5)), None)
+        self.assertEqual(sources.choose_curseforge_file(files, dict(self.game, version="5.5.4", major=5, flavour="mists_classic")), None)
+        # A later Forever patch still gets a Forever file before any Classic Era one.
+        files.append({"id": 5, "name": "A-5.zip", "type": "release", "versions": ["1.15.9"], "uploaded_at": "2026-05-01"})
+        later_forever = dict(self.game, version="1.60.2", major=1, flavour="forever_classic")
+        self.assertEqual(sources.choose_curseforge_file(files, later_forever)["id"], 1)
 
     def test_release_download_path(self):
         data = {"title": "Auctionator", "urls": {"curseforge": "https://www.curseforge.com/wow/addons/auctionator"},
@@ -68,6 +72,15 @@ class CurseForge(FakeInstall):
         self.assertEqual(lookup.call_args[0][0], "https://api.cfwidget.com/6124")
         self.assertEqual(release["download"], "https://edge.forgecdn.net/files/8939/5/Auctionator%20339.zip")
         self.assertEqual((release["project"], release["version"], release["size"]), ("auctionator", "339", 10))
+
+    def test_stale_mirror_is_refused(self):
+        data = {"title": "BigWigs", "urls": {}, "files": [{"id": 1, "name": "B.zip", "display": "v38", "type": "release",
+                                                           "versions": ["1.14.3"], "uploaded_at": "2022-05-12T12:00:00Z"}]}
+        with patch.object(sources, "fetch_json", return_value=data):
+            self.assertEqual(sources.curseforge_release("2382", self.game)["version"], "v38")  # No catalog date to compare.
+            with self.assertRaises(sources.Problem) as caught:
+                sources.curseforge_release("2382", self.game, listed_updated=sources.iso_ms("2026-09-25T00:00:00Z"))
+        self.assertIn("May 12, 2022", str(caught.exception))
 
     def test_project_still_loading(self):
         with patch.object(sources, "fetch_json", return_value={"error": "in_queue"}):

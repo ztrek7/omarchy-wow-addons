@@ -69,10 +69,11 @@ Item {
     }
     // Browse sources the user has on. Wago only appears as a page link in details.
     function usable(e) { return e.sources.filter(r => app.sourceOn[r.source] === true) }
-    // Where Install gets it: a source made for this game, most recently updated.
-    function bestRef(e) {
-        return usable(e).sort((a, b) => root.fitsRef(b) - root.fitsRef(a) || (b.updated || 0) - (a.updated || 0))[0] || null
+    // Where Install gets it: a site listing it for this game, most recently updated. The rest are fallbacks.
+    function rankedRefs(e) {
+        return usable(e).sort((a, b) => root.fitsRef(b) - root.fitsRef(a) || (b.updated || 0) - (a.updated || 0))
     }
+    function bestRef(e) { return rankedRefs(e)[0] || null }
     // WoWInterface has screenshots, so its description is preferred.
     function infoRef(e) {
         return ["wowinterface", "curseforge"].map(s => e.sources.find(r => r.source === s)).find(r => r) || null
@@ -91,8 +92,13 @@ Item {
     function act(e, ref) {
         let state = app.entryState(e)
         if (state === "update" && !ref) app.update([app.installedRowFor(e)])
-        else if (state !== "installed" || ref) app.installEntry(e, ref || bestRef(e))
+        else if (ref) app.installEntry(e, ref, [])  // The user picked this site.
+        else if (state !== "installed") {
+            let ranked = rankedRefs(e)
+            app.installEntry(e, ranked[0], ranked.slice(1))
+        }
     }
+    function cfSlug(e) { return (e.sources.find(r => r.source === "curseforge") || {}).id || "" }
     function openDetails(e) {
         entry = e
         let r = infoRef(e)
@@ -185,6 +191,9 @@ Item {
                 required property var modelData
                 readonly property var item: modelData.entry
                 readonly property string installState: root.app.entryState(item)
+                readonly property string logoSlug: root.cfSlug(item)
+                Component.onCompleted: root.app.wantLogo(logoSlug)
+                Component.onDestruction: root.app.dropLogo(logoSlug)
                 width: grid.cellWidth - 10
                 height: grid.cellHeight - 10
                 radius: 10
@@ -203,7 +212,9 @@ Item {
                         Image {
                             id: thumb
                             anchors.fill: parent
-                            source: root.visible ? card.item.thumb : ""
+                            // CurseForge logos load as cards appear. WoWInterface's thumbnail (a small
+                            // screenshot) fills in until then, or when the addon isn't on CurseForge.
+                            source: root.visible ? root.app.cfLogos[card.logoSlug] || card.item.thumb || "" : ""
                             sourceSize: Qt.size(168, 168)
                             asynchronous: true
                             fillMode: Image.PreserveAspectCrop

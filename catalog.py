@@ -8,6 +8,7 @@ Neither needs an API key:
 - WoWInterface: its official public file list.
 """
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import json
 import re
@@ -92,6 +93,76 @@ def fetch_curseforge():
 
 
 FETCHERS = {"curseforge": fetch_curseforge, "wowinterface": fetch_wowinterface}
+
+
+# --- CurseForge logos ----------------------------------------------------------
+# The CurseForge catalog has no images, so logos come from CFWidget one project
+# at a time, only for cards on screen, and are remembered so each is fetched once.
+
+LOGO_TTL = 30 * 86400
+LOGO_RETRY = 86400
+SLUG = re.compile(r"[a-z0-9][a-z0-9-]*")
+
+
+_CURSEFORGE_IDS = {}
+
+
+def _curseforge_listing(ident):
+    """The catalog's CurseForge entry for a slug or project number, or {}."""
+    path = cache_file("curseforge")
+    try:
+        stamp = (str(path), path.stat().st_mtime)
+    except OSError:
+        return {}
+    if stamp not in _CURSEFORGE_IDS:
+        _CURSEFORGE_IDS.clear()
+        index = {}
+        for e in source_entries("curseforge"):
+            index[e["id"]] = e
+            if str(e.get("numericId", "")).isdigit():
+                index[e["numericId"]] = e
+        _CURSEFORGE_IDS[stamp] = index
+    return _CURSEFORGE_IDS[stamp].get(str(ident).lower(), {})
+
+
+def curseforge_id(ident):
+    """CFWidget finds every CurseForge project by number but only some by name, so use the number when known."""
+    ident = str(ident).lower()
+    number = _curseforge_listing(ident).get("numericId", "")
+    return ident if ident.isdigit() or not str(number).isdigit() else number
+
+
+def curseforge_updated(ident):
+    """When the catalog last saw this CurseForge project change (ms), or 0."""
+    return _curseforge_listing(ident).get("updated", 0)
+
+
+def logos_file():
+    return sources.CACHE / "curseforge-logos.json"
+
+
+def logos(slugs, everything=False):
+    """{slug: logo url} for these CurseForge projects (or all remembered ones), fetching unknown ones."""
+    known = read(logos_file()) or {}
+    now = time.time()
+    wanted = [s for s in dict.fromkeys(slugs) if isinstance(s, str) and SLUG.fullmatch(s)][:24]
+    stale = [s for s in wanted if s not in known or now - known[s]["at"] >= (LOGO_TTL if known[s]["url"] else LOGO_RETRY)]
+
+    def lookup(slug):
+        try:
+            url = sources.cfwidget(curseforge_id(slug)).get("thumbnail") or ""
+        except Problem:
+            url = ""
+        return slug, url if isinstance(url, str) and url.startswith("https://") else ""
+
+    if stale:
+        # A few at a time: CFWidget is a free community service.
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            for slug, url in pool.map(lookup, stale):
+                known[slug] = {"url": url, "at": int(now)}
+        write(logos_file(), known)
+    names = known if everything else wanted
+    return {s: known[s]["url"] for s in names if s in known and known[s]["url"]}
 
 
 def load_entries():

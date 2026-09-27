@@ -38,7 +38,9 @@ WoW only loads addons at login. If the game is open, type `/reload` after making
 
 Only CurseForge and WoWInterface, the two big addon sites. Files always download straight from them, and each download is checked against the size or checksum the site lists. Nothing comes from GitHub or other random links. You can also add a `.zip` you downloaded yourself.
 
-WoWInterface has a public list of its addons. CurseForge only gives API keys to approved apps. So the CurseForge list comes from the public catalog the [instawow](https://github.com/layday/instawow-data) project publishes every day, plus [CFWidget](https://www.cfwidget.com/) for addon details. Other managers that don't ask for a key work the same way.
+WoWInterface has a public list of its addons. CurseForge only gives API keys to approved apps. So the CurseForge list comes from the public catalog the [instawow](https://github.com/layday/instawow-data) project publishes every day, plus [CFWidget](https://www.cfwidget.com/) for logos, details, and file lists. Other managers that don't ask for a key work the same way.
+
+CFWidget's copy of a project occasionally stops updating. The app checks each file list against the catalog's last-updated date and won't install an old version from a stale copy. If the addon is also on WoWInterface, it installs from there instead and tells you.
 
 [Wago](https://addons.wago.io) isn't supported. Wago only gives download access to people with a paid API key. When an addon is also on Wago, its details link to the Wago page.
 
