@@ -65,6 +65,13 @@ App {
             search.text = "questcompass_options"
             app.check(installed.results.length === 1, "search matches folder names")
             search.text = ""
+            // Installed addons use their Browse listing's icon.
+            app.check(app.rowEntries["wowi:9001"]?.name === "Quest Compass", "installed addon matched to its listing")
+            app.check(app.rowEntries["local:TradeLedger"]?.name === "Trade Ledger", "hand install matched through its TOC source")
+            app.check(!app.rowEntries["local:OldTimers"], "no listing, no icon")
+            let logo = Qt.resolvedUrl("assets/sources/curseforge.png").toString()
+            app.cfLogos = {"quest-compass": logo}
+            app.check(app.iconFor(app.rowEntries["wowi:9001"]) === logo, "same icon as Browse")
             installed.selectedId = "wowi:9001"
             app.check(app.updateIds.length === 2, "two updates available")
             app.check(app.find(app.windowItem, "nav-installed").contentItem.text.indexOf("2 ↑") > 0, "update count in navigation")

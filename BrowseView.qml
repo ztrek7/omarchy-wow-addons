@@ -98,7 +98,6 @@ Item {
             app.installEntry(e, ranked[0], ranked.slice(1))
         }
     }
-    function cfSlug(e) { return (e.sources.find(r => r.source === "curseforge") || {}).id || "" }
     function openDetails(e) {
         entry = e
         let r = infoRef(e)
@@ -191,7 +190,7 @@ Item {
                 required property var modelData
                 readonly property var item: modelData.entry
                 readonly property string installState: root.app.entryState(item)
-                readonly property string logoSlug: root.cfSlug(item)
+                readonly property string logoSlug: root.app.cfSlug(item)
                 Component.onCompleted: root.app.wantLogo(logoSlug)
                 Component.onDestruction: root.app.dropLogo(logoSlug)
                 width: grid.cellWidth - 10
@@ -204,22 +203,13 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 12
                     spacing: 12
-                    Rectangle {
+                    // CurseForge logos load as cards appear. WoWInterface's thumbnail (a small
+                    // screenshot) fills in until then, or when the addon isn't on CurseForge.
+                    UI.AddonIcon {
                         Layout.alignment: Qt.AlignTop
-                        implicitWidth: 84; implicitHeight: 84; radius: 8
-                        color: UI.Theme.hover
-                        clip: true
-                        Image {
-                            id: thumb
-                            anchors.fill: parent
-                            // CurseForge logos load as cards appear. WoWInterface's thumbnail (a small
-                            // screenshot) fills in until then, or when the addon isn't on CurseForge.
-                            source: root.visible ? root.app.cfLogos[card.logoSlug] || card.item.thumb || "" : ""
-                            sourceSize: Qt.size(168, 168)
-                            asynchronous: true
-                            fillMode: Image.PreserveAspectCrop
-                        }
-                        UI.Label { anchors.centerIn: parent; visible: thumb.status !== Image.Ready; text: card.item.name.slice(0, 1).toUpperCase(); font.pixelSize: 34; color: UI.Theme.muted }
+                        size: 84
+                        image: root.visible ? root.app.iconFor(card.item) : ""
+                        name: card.item.name
                     }
                     ColumnLayout {
                         Layout.fillWidth: true

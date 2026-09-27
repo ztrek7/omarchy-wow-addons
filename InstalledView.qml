@@ -88,6 +88,11 @@ Item {
                     id: row
                     required property var modelData
                     readonly property bool current: root.selectedId === modelData.id
+                    // Its Browse listing, for the icon. The catalog may load after the list does.
+                    readonly property var entry: root.app.rowEntries[modelData.id] || null
+                    readonly property string logoSlug: root.app.cfSlug(entry)
+                    onLogoSlugChanged: root.app.wantLogo(logoSlug)
+                    Component.onCompleted: root.app.wantLogo(logoSlug)
                     activeFocusOnTab: true
                     Accessible.role: Accessible.ListItem
                     Accessible.name: modelData.name + ", " + modelData.state
@@ -104,10 +109,11 @@ Item {
                         anchors.fill: parent
                         anchors.margins: 14
                         spacing: 12
-                        Rectangle {
-                            implicitWidth: 38; implicitHeight: 38; radius: 10
-                            color: UI.Theme.hover
-                            UI.Label { anchors.centerIn: parent; text: row.modelData.name.slice(0, 1).toUpperCase(); font.pixelSize: 19; font.weight: Font.Medium; color: row.modelData.managed ? UI.Theme.accent : UI.Theme.foreground }
+                        UI.AddonIcon {
+                            size: 44
+                            image: root.app.iconFor(row.entry)
+                            name: row.modelData.name
+                            letterColor: row.modelData.managed ? UI.Theme.accent : UI.Theme.foreground
                         }
                         ColumnLayout {
                             // Fill what's left beside the toggle instead of growing with long badges.
@@ -186,7 +192,18 @@ Item {
                         readonly property var check: addon ? root.app.checks[addon.id] : null
                         id: detail
                         UI.Label { text: "ADDON DETAILS"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
-                        UI.Label { objectName: "detailName"; Layout.fillWidth: true; text: detail.addon?.name || ""; font.pixelSize: 23; font.weight: Font.DemiBold; wrapMode: Text.Wrap }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 12
+                            UI.AddonIcon {
+                                objectName: "detailIcon"
+                                Layout.alignment: Qt.AlignTop
+                                size: 52
+                                image: detail.addon ? root.app.iconFor(root.app.rowEntries[detail.addon.id]) : ""
+                                name: detail.addon?.name || ""
+                            }
+                            UI.Label { objectName: "detailName"; Layout.fillWidth: true; text: detail.addon?.name || ""; font.pixelSize: 23; font.weight: Font.DemiBold; wrapMode: Text.Wrap }
+                        }
                         Flow {
                             Layout.fillWidth: true
                             spacing: 6

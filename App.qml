@@ -129,6 +129,19 @@ Scope {
         }
         return ""
     }
+    // Installed addon id -> its Browse listing, so both pages show the same icon.
+    readonly property var rowEntries: {
+        let map = {}
+        if (!addons.length) return map
+        for (let e of catalog) {
+            let row = installedRowFor(e)
+            if (row && !map[row]) map[row] = e  // The catalog is sorted by downloads; keep the main listing.
+        }
+        return map
+    }
+    function cfSlug(entry) { return entry ? (entry.sources.find(r => r.source === "curseforge") || {}).id || "" : "" }
+    // A CurseForge logo when there is one, else WoWInterface's thumbnail.
+    function iconFor(entry) { return entry ? cfLogos[cfSlug(entry)] || entry.thumb || "" : "" }
     function entryState(entry) {
         let row = installedRowFor(entry)
         if (row) return checks[row]?.state === "available" ? "update" : "installed"

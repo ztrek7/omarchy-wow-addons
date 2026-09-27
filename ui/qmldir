@@ -9,3 +9,4 @@ Tooltip 1.0 Tooltip.qml
 SearchField 1.0 SearchField.qml
 CheckOption 1.0 CheckOption.qml
 SourceBadge 1.0 SourceBadge.qml
+AddonIcon 1.0 AddonIcon.qml
