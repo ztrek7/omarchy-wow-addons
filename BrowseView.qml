@@ -31,7 +31,7 @@ Item {
         let category = categoryFilter.currentIndex > 0 ? categories[categoryFilter.currentIndex - 1]?.name : ""
         let days = [0, 31, 183, 365, 730][updatedFilter.currentIndex]
         let since = days ? Date.now() - days * 86400000 : 0
-        let forGame = !anyGame && major > 0
+        let forGame = !anyGame && !!flavour
         let hide = hideInstalled.checked
         let found = []
         for (let e of app.catalog) {
@@ -53,11 +53,19 @@ Item {
     }
     onResultsChanged: grid.positionViewAtBeginning()
 
-    // CurseForge tags game lines ("forever_classic"); the others list patch numbers.
-    function fitsRef(r) {
-        if (r.source === "wago") return false
-        if (r.flavours) return flavour ? r.flavours.indexOf(flavour) >= 0 : false
-        return (r.gameVersions || []).some(v => parseInt(v) === major)
+    // Whether a site lists the addon for exactly this game. Only the site's
+    // own tags count; a 1.13 addon isn't listed for WoW Forever just because it's 1.x.
+    function fitsRef(r) { return !!flavour && (r.flavours || []).indexOf(flavour) >= 0 }
+    function lineName(line) { return app.setup.gameNames?.[line] || line }
+    // What the sites actually say, e.g. "Listed for WoW Classic Era 1.13.2".
+    function listedText(refs) {
+        if (refs.some(r => root.fitsRef(r))) return "Listed for " + lineName(flavour)
+        let lines = []
+        refs.forEach(r => (r.flavours || []).forEach(f => { if (lines.indexOf(f) < 0) lines.push(f) }))
+        if (!lines.length) return "No game version listed"
+        let newest = refs.map(r => (r.gameVersions || [])[0]).find(v => v) || ""
+        return "Listed for " + lines.slice(0, 2).map(lineName).join(", ") + (lines.length > 2 ? " +" + (lines.length - 2) + " more" : "")
+            + (lines.length === 1 && newest ? " " + newest : "")
     }
     // Browse sources the user has on. Wago only appears as a page link in details.
     function usable(e) { return e.sources.filter(r => app.sourceOn[r.source] === true) }
@@ -68,10 +76,6 @@ Item {
     // WoWInterface has screenshots, so its description is preferred.
     function infoRef(e) {
         return ["wowinterface", "curseforge"].map(s => e.sources.find(r => r.source === s)).find(r => r) || null
-    }
-    function gameText(e) {
-        if (!major) return ""
-        return usable(e).some(r => root.fitsRef(r)) ? "Made for " + (app.game?.name || "your game") : "Not listed for " + (app.game?.name || "your game")
     }
     // One badge per site, even when a site lists the addon twice.
     function siteList(refs) {
@@ -160,8 +164,8 @@ Item {
         }
         UI.Label {
             Layout.fillWidth: true
-            text: "Addons on both sites show up once. Install gets the newest release made for your game, from whichever site has it. "
-                + "Categories come from WoWInterface. Game versions are whatever the author listed, and older addons often still work."
+            text: "Addons on both sites show up once. Install gets the newest release listed for your game, from whichever site has it. "
+                + "“Listed for” is what the author put on the site. Addons listed for an older game often still work; pick “Any game version” to see them."
                 + (root.app.catalogMessage ? "  " + root.app.catalogMessage : "")
             color: UI.Theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap
         }
@@ -231,8 +235,8 @@ Item {
                             UI.Label {
                                 Layout.fillWidth: true
                                 leftPadding: 3
-                                text: root.gameText(card.item)
-                                color: root.major && !card.modelData.refs.some(r => root.fitsRef(r)) ? UI.Theme.warning : UI.Theme.muted
+                                text: root.listedText(card.modelData.refs)
+                                color: root.flavour && !card.modelData.refs.some(r => root.fitsRef(r)) ? UI.Theme.warning : UI.Theme.muted
                                 font.pixelSize: 10; elide: Text.ElideRight
                             }
                         }
@@ -319,7 +323,7 @@ Item {
                         Layout.fillWidth: true
                         text: sourceRow.wago ? "Also on Wago. This app can't download from Wago, but you can get it there and add the .zip."
                             : ["Updated " + root.app.fullDate(sourceRow.modelData.updated), sourceRow.modelData.downloads ? "↓ " + root.app.compact(sourceRow.modelData.downloads) : "",
-                               root.fitsRef(sourceRow.modelData) ? "made for " + (root.app.game?.name || "your game") : "not listed for " + (root.app.game?.name || "your game"), sourceRow.on ? "" : "source turned off"].filter(x => x).join("  ·  ")
+                               root.listedText([sourceRow.modelData]), sourceRow.on ? "" : "source turned off"].filter(x => x).join("  ·  ")
                         color: UI.Theme.muted; font.pixelSize: 11; wrapMode: Text.Wrap
                     }
                     UI.ActionButton {

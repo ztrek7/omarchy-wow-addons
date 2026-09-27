@@ -131,6 +131,19 @@ App {
             app.check(!browse.anyGame && browse.results.length === forGame, "back to the game in use")
             app.check(app.fullDate(Date.UTC(2026, 8, 21, 12)) === "September 21, 2026", "full dates")
 
+            // Only claim what a site lists: a 2019 addon for 1.13.2 is Classic Era, not WoW Forever.
+            let shaman = byName("Old Blue Shaman")
+            app.check(browse.listedText(shaman.sources) === "Listed for WoW Classic Era", "Classic Era addon listed as such: " + browse.listedText(shaman.sources))
+            let era = app.setup
+            let forever = {key: "_classic_beta_", name: "WoW Forever Beta", version: "1.60.1", interface: 16001, major: 1, flavour: "forever_classic", addons: "/tmp/demo/x", path: "/tmp/demo/x"}
+            app.setup = Object.assign({}, era, {flavor: forever, flavors: era.flavors.concat([forever])})
+            app.check(browse.listedText(shaman.sources) === "Listed for WoW Classic Era 1.13.2", "not claimed for WoW Forever: " + browse.listedText(shaman.sources))
+            app.check(!entries(browse.results).some(e => e.name === "Old Blue Shaman"), "Classic Era addon hidden for WoW Forever")
+            app.check(entries(browse.results).some(e => e.name === "Trade Ledger"), "addon tagged for WoW Forever shown")
+            app.check(browse.listedText(byName("Trade Ledger").sources) === "Listed for WoW Forever", "Forever tag named without Beta")
+            app.check(browse.results.every(x => x.refs.some(r => (r.flavours || []).indexOf("forever_classic") >= 0)), "every result is listed for WoW Forever")
+            app.setup = era
+
             app.shot("installed", () => {
                 app.page = "browse"
                 Qt.callLater(() => app.shot("browse", () => {

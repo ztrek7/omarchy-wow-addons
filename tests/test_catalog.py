@@ -56,6 +56,12 @@ class Merge(unittest.TestCase):
                                 "wowinterface": {"entries": [wowi("15", "Key UI Viewer", ["KeyViewer"])]}})
         self.assertEqual(len(merged), 1)
 
+    def test_wowinterface_versions_name_their_game(self):
+        ref = catalog.source_ref("wowinterface", dict(wowi("16", "Old Shaman", ["OldShaman"]), gameVersions=["1.13.2", "12.1.0", "1.60.1"]))
+        self.assertEqual(ref["flavours"], ["forever_classic", "mainline", "vanilla_classic"])
+        ref = catalog.source_ref("wowinterface", dict(wowi("17", "Old", ["Old"]), gameVersions=["1.13.2"]))
+        self.assertEqual(ref["flavours"], ["vanilla_classic"])
+
     def test_downloads_sort_and_totals(self):
         merged = catalog.merge({"curseforge": {"entries": [cf("a", "A", ["A"], "7", downloads=5), cf("b", "B", ["B"], "8", downloads=500)]}})
         self.assertEqual([e["name"] for e in merged], ["B", "A"])

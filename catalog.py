@@ -15,10 +15,11 @@ import time
 
 from library import Problem
 import sources
+import wowdir
 
 SOURCES = ("curseforge", "wowinterface")
 # Bump when merge rules or entry fields change, so a cached merge is rebuilt.
-FORMAT = 2
+FORMAT = 3
 TTL = 6 * 3600
 INSTAWOW = "https://raw.githubusercontent.com/layday/instawow-data/data/base-catalogue-v8.compact.json"
 # instawow's source names -> ours.
@@ -213,8 +214,11 @@ def source_ref(source, entry):
     if source == "curseforge":
         ref.update(flavours=entry["flavours"], numericId=entry["numericId"])
     else:
-        ref["gameVersions"] = entry.get("gameVersions", [])
-        ref["version"] = entry.get("version", "")
+        # WoWInterface lists patch numbers. Name the game each belongs to, the
+        # way CurseForge tags them: 1.13.2 is Classic Era, 1.60.1 is Forever.
+        versions = entry.get("gameVersions", [])
+        ref.update(gameVersions=versions, version=entry.get("version", ""),
+                   flavours=sorted({f for f in (wowdir.game_flavour(v) for v in versions) if f}))
     if source == "wowinterface":
         ref.update(monthly=entry.get("monthly", 0), favorites=entry.get("favorites", 0))
     return ref

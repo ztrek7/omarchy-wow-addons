@@ -34,6 +34,7 @@ def overview(request):
         library.save_state(state)  # Drops records for folders deleted outside the app.
     enabled = wowdir.load_config().get("sources", {})
     setup["sources"] = {name: enabled.get(name, True) is not False for name in catalog.SOURCES}
+    setup["gameNames"] = wowdir.GAME_NAMES
     return {"setup": setup, "addons": addons, "gameRunning": wowdir.game_running(), "downloads": recent_zips()}
 
 
@@ -138,9 +139,8 @@ def install_one(request, game, state):
 
 
 def fits(ref, game):
-    if ref["source"] == "curseforge":
-        return game.get("flavour") in ref.get("flavours", [])
-    return any(v.split(".")[0] == str(game.get("major")) for v in ref.get("gameVersions", []))
+    """Whether the site lists this addon for exactly this game (WoW Forever, Classic Era, Retail, ...)."""
+    return game.get("flavour") in ref.get("flavours", [])
 
 
 def requirement_source(folder, entries, game):

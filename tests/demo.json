@@ -40,6 +40,16 @@
   "sources": {
    "curseforge": true,
    "wowinterface": true
+  },
+  "gameNames": {
+   "mainline": "WoW Retail",
+   "vanilla_classic": "WoW Classic Era",
+   "forever_classic": "WoW Forever",
+   "tbc_classic": "WoW Burning Crusade Classic",
+   "wrath_classic": "WoW Wrath Classic",
+   "titan_classic": "WoW Titan Reforged",
+   "cata_classic": "WoW Cataclysm Classic",
+   "mists_classic": "WoW Mists of Pandaria Classic"
   }
  },
  "addons": [
@@ -310,7 +320,11 @@
      ],
      "version": "2.5.0",
      "monthly": 3900,
-     "favorites": 1210
+     "favorites": 1210,
+     "flavours": [
+      "mainline",
+      "vanilla_classic"
+     ]
     },
     {
      "source": "wago",
@@ -341,7 +355,10 @@
      ],
      "version": "1.9",
      "monthly": 700,
-     "favorites": 310
+     "favorites": 310,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -367,7 +384,10 @@
      ],
      "version": "0.3",
      "monthly": 4,
-     "favorites": 20
+     "favorites": 20,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -393,7 +413,10 @@
      ],
      "version": "0.0",
      "monthly": 0,
-     "favorites": 22
+     "favorites": 22,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -419,7 +442,10 @@
      ],
      "version": "0.1",
      "monthly": 13,
-     "favorites": 44
+     "favorites": 44,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -446,7 +472,11 @@
      ],
      "version": "0.2",
      "monthly": 26,
-     "favorites": 66
+     "favorites": 66,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -481,7 +511,8 @@
      "gameVersions": [],
      "version": "0.3",
      "monthly": 39,
-     "favorites": 88
+     "favorites": 88,
+     "flavours": []
     }
    ]
   },
@@ -507,7 +538,10 @@
      ],
      "version": "0.4",
      "monthly": 52,
-     "favorites": 110
+     "favorites": 110,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -533,7 +567,10 @@
      ],
      "version": "0.5",
      "monthly": 65,
-     "favorites": 132
+     "favorites": 132,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -570,7 +607,10 @@
      ],
      "version": "0.6",
      "monthly": 78,
-     "favorites": 154
+     "favorites": 154,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -597,7 +637,11 @@
      ],
      "version": "0.7",
      "monthly": 91,
-     "favorites": 176
+     "favorites": 176,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -621,7 +665,8 @@
      "gameVersions": [],
      "version": "0.8",
      "monthly": 104,
-     "favorites": 198
+     "favorites": 198,
+     "flavours": []
     }
    ]
   },
@@ -658,7 +703,10 @@
      ],
      "version": "0.9",
      "monthly": 117,
-     "favorites": 220
+     "favorites": 220,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -684,7 +732,10 @@
      ],
      "version": "1.0",
      "monthly": 7,
-     "favorites": 33
+     "favorites": 33,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -711,7 +762,11 @@
      ],
      "version": "1.1",
      "monthly": 20,
-     "favorites": 66
+     "favorites": 66,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -746,7 +801,8 @@
      "gameVersions": [],
      "version": "1.2",
      "monthly": 33,
-     "favorites": 99
+     "favorites": 99,
+     "flavours": []
     }
    ]
   },
@@ -772,7 +828,10 @@
      ],
      "version": "1.3",
      "monthly": 46,
-     "favorites": 132
+     "favorites": 132,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -798,7 +857,10 @@
      ],
      "version": "1.4",
      "monthly": 59,
-     "favorites": 165
+     "favorites": 165,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -835,7 +897,10 @@
      ],
      "version": "1.5",
      "monthly": 72,
-     "favorites": 198
+     "favorites": 198,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -862,7 +927,11 @@
      ],
      "version": "1.6",
      "monthly": 85,
-     "favorites": 231
+     "favorites": 231,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -886,7 +955,8 @@
      "gameVersions": [],
      "version": "1.7",
      "monthly": 98,
-     "favorites": 264
+     "favorites": 264,
+     "flavours": []
     }
    ]
   },
@@ -923,7 +993,10 @@
      ],
      "version": "1.8",
      "monthly": 111,
-     "favorites": 297
+     "favorites": 297,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -949,7 +1022,10 @@
      ],
      "version": "1.9",
      "monthly": 124,
-     "favorites": 330
+     "favorites": 330,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -976,7 +1052,11 @@
      ],
      "version": "2.0",
      "monthly": 14,
-     "favorites": 44
+     "favorites": 44,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1011,7 +1091,8 @@
      "gameVersions": [],
      "version": "2.1",
      "monthly": 27,
-     "favorites": 88
+     "favorites": 88,
+     "flavours": []
     }
    ]
   },
@@ -1037,7 +1118,10 @@
      ],
      "version": "2.2",
      "monthly": 40,
-     "favorites": 132
+     "favorites": 132,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -1063,7 +1147,10 @@
      ],
      "version": "2.3",
      "monthly": 53,
-     "favorites": 176
+     "favorites": 176,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1100,7 +1187,10 @@
      ],
      "version": "2.4",
      "monthly": 66,
-     "favorites": 220
+     "favorites": 220,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -1127,7 +1217,11 @@
      ],
      "version": "2.5",
      "monthly": 79,
-     "favorites": 264
+     "favorites": 264,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1151,7 +1245,8 @@
      "gameVersions": [],
      "version": "2.6",
      "monthly": 92,
-     "favorites": 308
+     "favorites": 308,
+     "flavours": []
     }
    ]
   },
@@ -1188,7 +1283,10 @@
      ],
      "version": "2.7",
      "monthly": 105,
-     "favorites": 352
+     "favorites": 352,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -1214,7 +1312,10 @@
      ],
      "version": "2.8",
      "monthly": 118,
-     "favorites": 396
+     "favorites": 396,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1240,7 +1341,10 @@
      ],
      "version": "2.9",
      "monthly": 131,
-     "favorites": 440
+     "favorites": 440,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -1275,7 +1379,8 @@
      "gameVersions": [],
      "version": "3.0",
      "monthly": 21,
-     "favorites": 55
+     "favorites": 55,
+     "flavours": []
     }
    ]
   },
@@ -1301,7 +1406,10 @@
      ],
      "version": "3.1",
      "monthly": 34,
-     "favorites": 110
+     "favorites": 110,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -1327,7 +1435,10 @@
      ],
      "version": "3.2",
      "monthly": 47,
-     "favorites": 165
+     "favorites": 165,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1364,7 +1475,10 @@
      ],
      "version": "3.3",
      "monthly": 60,
-     "favorites": 220
+     "favorites": 220,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -1391,7 +1505,11 @@
      ],
      "version": "3.4",
      "monthly": 73,
-     "favorites": 275
+     "favorites": 275,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1415,7 +1533,8 @@
      "gameVersions": [],
      "version": "3.5",
      "monthly": 86,
-     "favorites": 330
+     "favorites": 330,
+     "flavours": []
     }
    ]
   },
@@ -1452,7 +1571,10 @@
      ],
      "version": "3.6",
      "monthly": 99,
-     "favorites": 385
+     "favorites": 385,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -1478,7 +1600,10 @@
      ],
      "version": "3.7",
      "monthly": 112,
-     "favorites": 440
+     "favorites": 440,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1504,7 +1629,10 @@
      ],
      "version": "3.8",
      "monthly": 125,
-     "favorites": 495
+     "favorites": 495,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -1542,7 +1670,11 @@
      ],
      "version": "3.9",
      "monthly": 138,
-     "favorites": 550
+     "favorites": 550,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1568,7 +1700,10 @@
      ],
      "version": "4.0",
      "monthly": 28,
-     "favorites": 66
+     "favorites": 66,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -1594,7 +1729,10 @@
      ],
      "version": "4.1",
      "monthly": 41,
-     "favorites": 132
+     "favorites": 132,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1631,7 +1769,10 @@
      ],
      "version": "4.2",
      "monthly": 54,
-     "favorites": 198
+     "favorites": 198,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -1658,7 +1799,11 @@
      ],
      "version": "4.3",
      "monthly": 67,
-     "favorites": 264
+     "favorites": 264,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1682,7 +1827,8 @@
      "gameVersions": [],
      "version": "4.4",
      "monthly": 80,
-     "favorites": 330
+     "favorites": 330,
+     "flavours": []
     }
    ]
   },
@@ -1719,7 +1865,10 @@
      ],
      "version": "4.5",
      "monthly": 93,
-     "favorites": 396
+     "favorites": 396,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -1745,7 +1894,10 @@
      ],
      "version": "4.6",
      "monthly": 106,
-     "favorites": 462
+     "favorites": 462,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1771,7 +1923,10 @@
      ],
      "version": "4.7",
      "monthly": 119,
-     "favorites": 528
+     "favorites": 528,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -1809,7 +1964,11 @@
      ],
      "version": "4.8",
      "monthly": 132,
-     "favorites": 594
+     "favorites": 594,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1833,7 +1992,8 @@
      "gameVersions": [],
      "version": "4.9",
      "monthly": 145,
-     "favorites": 660
+     "favorites": 660,
+     "flavours": []
     }
    ]
   },
@@ -1859,7 +2019,10 @@
      ],
      "version": "5.0",
      "monthly": 35,
-     "favorites": 77
+     "favorites": 77,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1896,7 +2059,10 @@
      ],
      "version": "5.1",
      "monthly": 48,
-     "favorites": 154
+     "favorites": 154,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -1923,7 +2089,11 @@
      ],
      "version": "5.2",
      "monthly": 61,
-     "favorites": 231
+     "favorites": 231,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -1947,7 +2117,8 @@
      "gameVersions": [],
      "version": "5.3",
      "monthly": 74,
-     "favorites": 308
+     "favorites": 308,
+     "flavours": []
     }
    ]
   },
@@ -1984,7 +2155,10 @@
      ],
      "version": "5.4",
      "monthly": 87,
-     "favorites": 385
+     "favorites": 385,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -2010,7 +2184,10 @@
      ],
      "version": "5.5",
      "monthly": 100,
-     "favorites": 462
+     "favorites": 462,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2036,7 +2213,10 @@
      ],
      "version": "5.6",
      "monthly": 113,
-     "favorites": 539
+     "favorites": 539,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -2074,7 +2254,11 @@
      ],
      "version": "5.7",
      "monthly": 126,
-     "favorites": 616
+     "favorites": 616,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2098,7 +2282,8 @@
      "gameVersions": [],
      "version": "5.8",
      "monthly": 139,
-     "favorites": 693
+     "favorites": 693,
+     "flavours": []
     }
    ]
   },
@@ -2124,7 +2309,10 @@
      ],
      "version": "5.9",
      "monthly": 152,
-     "favorites": 770
+     "favorites": 770,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -2161,7 +2349,10 @@
      ],
      "version": "6.0",
      "monthly": 42,
-     "favorites": 88
+     "favorites": 88,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -2188,7 +2379,11 @@
      ],
      "version": "6.1",
      "monthly": 55,
-     "favorites": 176
+     "favorites": 176,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2212,7 +2407,8 @@
      "gameVersions": [],
      "version": "6.2",
      "monthly": 68,
-     "favorites": 264
+     "favorites": 264,
+     "flavours": []
     }
    ]
   },
@@ -2249,7 +2445,10 @@
      ],
      "version": "6.3",
      "monthly": 81,
-     "favorites": 352
+     "favorites": 352,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -2275,7 +2474,10 @@
      ],
      "version": "6.4",
      "monthly": 94,
-     "favorites": 440
+     "favorites": 440,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2301,7 +2503,10 @@
      ],
      "version": "6.5",
      "monthly": 107,
-     "favorites": 528
+     "favorites": 528,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -2339,7 +2544,11 @@
      ],
      "version": "6.6",
      "monthly": 120,
-     "favorites": 616
+     "favorites": 616,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2363,7 +2572,8 @@
      "gameVersions": [],
      "version": "6.7",
      "monthly": 133,
-     "favorites": 704
+     "favorites": 704,
+     "flavours": []
     }
    ]
   },
@@ -2389,7 +2599,10 @@
      ],
      "version": "6.8",
      "monthly": 146,
-     "favorites": 792
+     "favorites": 792,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -2426,7 +2639,10 @@
      ],
      "version": "6.9",
      "monthly": 159,
-     "favorites": 880
+     "favorites": 880,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2453,7 +2669,11 @@
      ],
      "version": "7.0",
      "monthly": 49,
-     "favorites": 99
+     "favorites": 99,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2477,7 +2697,8 @@
      "gameVersions": [],
      "version": "7.1",
      "monthly": 62,
-     "favorites": 198
+     "favorites": 198,
+     "flavours": []
     }
    ]
   },
@@ -2514,7 +2735,10 @@
      ],
      "version": "7.2",
      "monthly": 75,
-     "favorites": 297
+     "favorites": 297,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -2540,7 +2764,10 @@
      ],
      "version": "7.3",
      "monthly": 88,
-     "favorites": 396
+     "favorites": 396,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2566,7 +2793,10 @@
      ],
      "version": "7.4",
      "monthly": 101,
-     "favorites": 495
+     "favorites": 495,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -2604,7 +2834,11 @@
      ],
      "version": "7.5",
      "monthly": 114,
-     "favorites": 594
+     "favorites": 594,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2628,7 +2862,8 @@
      "gameVersions": [],
      "version": "7.6",
      "monthly": 127,
-     "favorites": 693
+     "favorites": 693,
+     "flavours": []
     }
    ]
   },
@@ -2654,7 +2889,10 @@
      ],
      "version": "7.7",
      "monthly": 140,
-     "favorites": 792
+     "favorites": 792,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -2691,7 +2929,10 @@
      ],
      "version": "7.8",
      "monthly": 153,
-     "favorites": 891
+     "favorites": 891,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2717,7 +2958,10 @@
      ],
      "version": "7.9",
      "monthly": 166,
-     "favorites": 990
+     "favorites": 990,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -2741,7 +2985,8 @@
      "gameVersions": [],
      "version": "8.0",
      "monthly": 56,
-     "favorites": 110
+     "favorites": 110,
+     "flavours": []
     }
    ]
   },
@@ -2778,7 +3023,10 @@
      ],
      "version": "8.1",
      "monthly": 69,
-     "favorites": 220
+     "favorites": 220,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -2804,7 +3052,10 @@
      ],
      "version": "8.2",
      "monthly": 82,
-     "favorites": 330
+     "favorites": 330,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2830,7 +3081,10 @@
      ],
      "version": "8.3",
      "monthly": 95,
-     "favorites": 440
+     "favorites": 440,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -2868,7 +3122,11 @@
      ],
      "version": "8.4",
      "monthly": 108,
-     "favorites": 550
+     "favorites": 550,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2892,7 +3150,8 @@
      "gameVersions": [],
      "version": "8.5",
      "monthly": 121,
-     "favorites": 660
+     "favorites": 660,
+     "flavours": []
     }
    ]
   },
@@ -2918,7 +3177,10 @@
      ],
      "version": "8.6",
      "monthly": 134,
-     "favorites": 770
+     "favorites": 770,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -2955,7 +3217,10 @@
      ],
      "version": "8.7",
      "monthly": 147,
-     "favorites": 880
+     "favorites": 880,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -2981,7 +3246,10 @@
      ],
      "version": "8.8",
      "monthly": 160,
-     "favorites": 990
+     "favorites": 990,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -3008,7 +3276,11 @@
      ],
      "version": "8.9",
      "monthly": 173,
-     "favorites": 1100
+     "favorites": 1100,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -3045,7 +3317,10 @@
      ],
      "version": "9.0",
      "monthly": 63,
-     "favorites": 121
+     "favorites": 121,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -3071,7 +3346,10 @@
      ],
      "version": "9.1",
      "monthly": 76,
-     "favorites": 242
+     "favorites": 242,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -3097,7 +3375,10 @@
      ],
      "version": "9.2",
      "monthly": 89,
-     "favorites": 363
+     "favorites": 363,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -3135,7 +3416,11 @@
      ],
      "version": "9.3",
      "monthly": 102,
-     "favorites": 484
+     "favorites": 484,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -3159,7 +3444,8 @@
      "gameVersions": [],
      "version": "9.4",
      "monthly": 115,
-     "favorites": 605
+     "favorites": 605,
+     "flavours": []
     }
    ]
   },
@@ -3185,7 +3471,10 @@
      ],
      "version": "9.5",
      "monthly": 128,
-     "favorites": 726
+     "favorites": 726,
+     "flavours": [
+      "tbc_classic"
+     ]
     }
    ]
   },
@@ -3222,7 +3511,10 @@
      ],
      "version": "9.6",
      "monthly": 141,
-     "favorites": 847
+     "favorites": 847,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -3248,7 +3540,10 @@
      ],
      "version": "9.7",
      "monthly": 154,
-     "favorites": 968
+     "favorites": 968,
+     "flavours": [
+      "mainline"
+     ]
     }
    ]
   },
@@ -3275,7 +3570,11 @@
      ],
      "version": "9.8",
      "monthly": 167,
-     "favorites": 1089
+     "favorites": 1089,
+     "flavours": [
+      "cata_classic",
+      "vanilla_classic"
+     ]
     }
    ]
   },
@@ -3310,7 +3609,8 @@
      "gameVersions": [],
      "version": "9.9",
      "monthly": 180,
-     "favorites": 1210
+     "favorites": 1210,
+     "flavours": []
     }
    ]
   },
@@ -3409,6 +3709,34 @@
       "mainline"
      ],
      "numericId": "802"
+    }
+   ]
+  },
+  {
+   "key": "wowinterface:25101",
+   "name": "Old Blue Shaman",
+   "author": "Someone",
+   "category": "Shaman",
+   "thumb": "",
+   "dirs": [
+    "OldBlueShaman"
+   ],
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "25101",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1567413480000,
+     "downloads": 16784,
+     "gameVersions": [
+      "1.13.2"
+     ],
+     "version": "1.1",
+     "monthly": 6,
+     "favorites": 15,
+     "flavours": [
+      "vanilla_classic"
+     ]
     }
    ]
   }

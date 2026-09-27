@@ -168,6 +168,11 @@ class Backend(FakeInstall):
         self.assertEqual(rows["curseforge:raids"]["missing"], [])
         self.assertEqual(rows["curseforge:deadly-boss-mods"]["missing"], ["LibFoo"])
 
+    def test_game_match_is_exact(self):
+        forever = {"flavour": "forever_classic", "major": 1}
+        self.assertFalse(backend.fits({"source": "wowinterface", "flavours": ["vanilla_classic"], "gameVersions": ["1.13.2"]}, forever))
+        self.assertTrue(backend.fits({"source": "curseforge", "flavours": ["forever_classic"]}, forever))
+
     def test_disabled_requirement_is_turned_on(self):
         make_addon(self.addons, "Core")
         make_addon(self.addons, "Plugin", Dependencies="Core")

@@ -22,9 +22,9 @@ To remove the app later, run `python3 scripts/install.py --uninstall`. Your addo
 
 **Finding your game.** The app looks for World of Warcraft in Wine and Proton prefixes, such as the Battle.net install that comes with Omarchy. It lists every version it finds, like WoW Retail, WoW Classic, WoW Classic Era, WoW Forever, and their PTRs and betas. Switch between them from the menu in Browse or in Settings. If your game is somewhere unusual, point the app at the folder in Settings.
 
-**Browsing.** Browse lists about 17,000 addons from CurseForge and WoWInterface together. An addon that's on both sites shows up once, with a logo for each site. You can search, filter by category or last update, hide what you already have, and sort by downloads, date, or name. It only shows addons made for the game you picked, unless you choose "Any game version". Either site can be turned off.
+**Browsing.** Browse lists about 17,000 addons from CurseForge and WoWInterface together. An addon that's on both sites shows up once, with a logo for each site. You can search, filter by category or last update, hide what you already have, and sort by downloads, date, or name. It only shows addons the site lists for the game you picked, unless you choose "Any game version". Each card says which game the addon is listed for, taken straight from the site. Addons listed for an older game often still work, but the app won't claim they were made for yours. Either site can be turned off.
 
-**Installing.** Install gets the newest stable release made for your game, from whichever site has it. If the addon needs other addons to work, those get installed too. If something is already in the way, the old copy goes to the trash first.
+**Installing.** Install gets the newest stable release listed for your game, from whichever site has it. If the addon needs other addons to work, those get installed too. If something is already in the way, the old copy goes to the trash first.
 
 **Updating.** The app checks for updates when it opens and every six hours while it's open. You can update one addon or all of them. Addons you copied in by hand get checked too, as long as their files say which CurseForge or WoWInterface page they came from.
 
