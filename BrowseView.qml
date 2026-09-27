@@ -106,6 +106,12 @@ Item {
     }
     function closeDetails() { details.close() }
     function focusSearch() { search.forceActiveFocus() }
+    // Escape clears a search before it closes the window.
+    function clearSearch() {
+        if (!search.activeFocus || !search.text) return false
+        search.text = ""
+        return true
+    }
 
     ColumnLayout {
         anchors.fill: parent

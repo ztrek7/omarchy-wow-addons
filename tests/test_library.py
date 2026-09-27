@@ -109,6 +109,15 @@ class RemoveAndInstall(FakeInstall):
         self.assertEqual(library.list_addons(self.game, state), [])
         self.assertEqual(library.packages(state, self.game), [])
 
+    def test_leftover_staging_folders_are_cleared(self):
+        import os, time
+        old = library.staging_dir(self.game)
+        recent = library.staging_dir(self.game)
+        os.utime(old, (time.time() - 2 * 86400,) * 2)
+        library.staging_dir(self.game)
+        self.assertFalse(old.exists())
+        self.assertTrue(recent.exists())
+
     def test_staging_is_beside_addons(self):
         path = library.staging_dir(self.game)
         self.assertEqual(Path(path).parent, self.addons.parent)

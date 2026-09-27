@@ -32,6 +32,12 @@ Item {
     }
     onResultsChanged: { if (!results.some(a => a.id === selectedId)) selectedId = results.length ? results[0].id : "" }
     function focusSearch() { search.forceActiveFocus() }
+    // Escape clears a search before it closes the window.
+    function clearSearch() {
+        if (!search.activeFocus || !search.text) return false
+        search.text = ""
+        return true
+    }
     // Missing requirements first, then updates, then out-of-date addons.
     function attention(a) {
         return (a.missing.length || a.requiresDisabled.length ? 4 : 0) + (app.checks[a.id]?.state === "available" ? 2 : 0) + (a.outOfDate ? 1 : 0)

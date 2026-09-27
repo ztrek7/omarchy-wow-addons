@@ -21,7 +21,7 @@ Scope {
     property var downloads: []
     property string lastChecked: ""
 
-    // WoWInterface catalog, loaded from the backend's cache file.
+    // The Browse catalog (CurseForge and WoWInterface), loaded from the backend's cache file.
     property var catalog: []
     property var catalogInfo: ({})
     property string catalogMessage: ""
@@ -85,6 +85,18 @@ Scope {
         return ({wowinterface: "WoWInterface", curseforge: "CurseForge", wago: "Wago", file: "Zip file", manual: "Manual install"})[source] || source
     }
 
+    // Version and recent activity for a bug report, with the home folder shortened to ~.
+    function reportDetails() {
+        let home = Quickshell.env("HOME") || ""
+        let lines = ["WoW Addons " + (setup.appVersion || "unknown"),
+                     "Game: " + gameLabel() + (game?.interface ? " (interface " + game.interface + ")" : "") + (game ? ", folder " + game.key : ""),
+                     "Addons installed: " + addons.length,
+                     "Sites on: " + Object.keys(sourceOn).filter(k => sourceOn[k]).join(", "),
+                     "", "Recent activity:"]
+        events.slice(0, 15).reverse().forEach(e => lines.push((e.error ? "[error] " : "") + e.time + "  " + e.message))
+        let text = lines.join("\n")
+        return home ? text.split(home).join("~") : text
+    }
     function log(message, error) {
         status = message
         failed = !!error
@@ -402,6 +414,8 @@ Scope {
             onActivated: {
                 if (browseView.detailsOpen) browseView.closeDetails()
                 else if (dialog.opened) dialog.close()
+                else if (app.page === "browse" && browseView.clearSearch()) return
+                else if (app.page === "installed" && installedView.clearSearch()) return
                 else if (!app.busy) Qt.quit()
             }
         }

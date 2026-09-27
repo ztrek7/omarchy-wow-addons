@@ -41,11 +41,16 @@ class CurseForge(FakeInstall):
     def test_wowinterface_page(self):
         self.assertEqual(sources.wowinterface_page("https://www.wowinterface.com/downloads/info7032-TomTom.html"), "7032")
         self.assertIsNone(sources.wowinterface_page("https://evil.example/downloads/info7032"))
+        self.assertEqual(sources.wowinterface_page("wowinterface.com/downloads/info7032-TomTom.html"), "7032")
 
     def test_project_parsing(self):
         self.assertEqual(sources.curseforge_project("https://www.curseforge.com/wow/addons/Auctionator/"), "auctionator")
         self.assertIsNone(sources.curseforge_project("https://www.curseforge.com/minecraft/mc-mods/x"))
-        self.assertIsNone(sources.curseforge_project("http://www.curseforge.com/wow/addons/x"))
+        # Links are only parsed for their ID, so http:// or no scheme is fine; other sites aren't.
+        self.assertEqual(sources.curseforge_project("curseforge.com/wow/addons/x"), "x")
+        self.assertEqual(sources.curseforge_project("http://www.curseforge.com/wow/addons/x/files"), "x")
+        self.assertIsNone(sources.curseforge_project("https://evilcurseforge.com/wow/addons/x"))
+        self.assertIsNone(sources.curseforge_project("https://curseforge.com.example/wow/addons/x"))
 
     def test_picks_newest_release_for_client_version(self):
         files = [

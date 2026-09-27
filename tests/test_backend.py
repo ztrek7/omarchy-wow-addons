@@ -213,6 +213,40 @@ class Backend(FakeInstall):
         # Compared with the installed version, not the CurseForge record.
         self.assertEqual(check, {"state": "available", "latest": "12.1.1", "source": "wowinterface"})
 
+    def test_pasted_link_falls_back_to_the_other_site(self):
+        data = make_zip({"DBM-Core/DBM-Core.toc": toc("DBM")})
+        details = {"id": "8814", "name": "Deadly Boss Mods", "version": "12.1.1", "updated": 1, "download": "https://cdn.wowinterface.com/x", "md5": "", "author": "a"}
+        entries = [{"key": "curseforge:deadly-boss-mods", "name": "DBM", "dirs": ["DBM-Core"], "sources": [
+            {"source": "curseforge", "id": "deadly-boss-mods", "numericId": "3358"}, {"source": "wowinterface", "id": "8814"}]}]
+        with self.catalog_with(*entries), patch.object(sources, "curseforge_release", side_effect=sources.Problem("out of date")), \
+                patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "fetch", return_value=data):
+            result = self.call(action="install", location="curseforge.com/wow/addons/deadly-boss-mods")
+        self.assertTrue(result["ok"], result)
+        self.assertIn("Installed Deadly Boss Mods 12.1.1", result["message"])
+
+    def listings(self, dates):
+        """Pretend catalog dates: {(source, id): "YYYY-MM-DD"}."""
+        stamps = {k: sources.iso_ms(v + "T12:00:00+00:00") for k, v in dates.items()}
+        return patch.object(catalog, "listing", side_effect=lambda source, ident: {"updated": stamps[(source, str(ident))]} if (source, str(ident)) in stamps else {})
+
+    def test_old_listing_on_the_other_site_is_not_used(self):
+        stale = sources.Problem("CFWidget's copy of DBM is out of date.")
+        with self.listings({("curseforge", "deadly-boss-mods"): "2026-09-25", ("wowinterface", "8814"): "2025-09-15"}), \
+                patch.object(sources, "curseforge_release", side_effect=stale), patch.object(sources, "wowi_details") as wowi:
+            result = self.call(action="install", source="curseforge", id="deadly-boss-mods", alternatives=[{"source": "wowinterface", "id": "8814"}])
+        wowi.assert_not_called()
+        self.assertFalse(result["ok"])
+        self.assertIn("WoWInterface's listing hasn't been updated since September 15, 2025", result["error"])
+        self.assertIn("add the .zip", result["error"])
+
+    def test_update_check_never_offers_an_older_version(self):
+        make_addon(self.addons, "Questie", Version="v12.0.1", **{"X-WoWI-ID": "24994", "X-Curse-Project-ID": "334372"})
+        with self.listings({("curseforge", "334372"): "2026-09-26", ("wowinterface", "24994"): "2021-03-26"}), patch.object(catalog, "refresh"), \
+                patch.object(catalog, "source_entries", return_value=[{"id": "24994", "version": "6.2.5", "updated": 1}]), \
+                patch.object(sources, "curseforge_release", return_value=self.curse("v12.0.1", project="questie")):
+            check = self.call(action="check")["checks"]["local:Questie"]
+        self.assertEqual(check, {"state": "current", "latest": "v12.0.1", "source": "curseforge"})
+
     def test_bad_location(self):
         data = self.call(action="install", location="nothing here")
         self.assertFalse(data["ok"])

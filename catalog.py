@@ -9,7 +9,6 @@ Neither needs an API key:
 """
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-import datetime
 import json
 import re
 import time
@@ -50,13 +49,6 @@ def write(path, data):
     temporary.replace(path)
 
 
-def iso_ms(value):
-    try:
-        return int(datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp() * 1000)
-    except ValueError:
-        return 0
-
-
 # --- Fetching each source ----------------------------------------------------
 
 def fetch_wowinterface():
@@ -83,7 +75,7 @@ def fetch_curseforge():
                 "id": item["slug"], "numericId": str(item.get("id", "")), "name": item.get("name") or item["slug"],
                 "url": item.get("url") or f"https://www.curseforge.com/wow/addons/{item['slug']}",
                 "flavours": item.get("game_flavours") or [], "downloads": int(item.get("download_count") or 0),
-                "updated": iso_ms(item.get("last_updated")), "dirs": folders, "sameAs": same,
+                "updated": sources.iso_ms(item.get("last_updated")), "dirs": folders, "sameAs": same,
             })
         elif len(same) >= 2:
             # A listing elsewhere that names the same addon on two sites links
@@ -104,25 +96,28 @@ LOGO_RETRY = 86400
 SLUG = re.compile(r"[a-z0-9][a-z0-9-]*")
 
 
-_CURSEFORGE_IDS = {}
+_LISTINGS = {}
 
 
-def _curseforge_listing(ident):
-    """The catalog's CurseForge entry for a slug or project number, or {}."""
-    path = cache_file("curseforge")
+def listing(source, ident):
+    """A site's catalog entry for an id (a CurseForge slug or number, a WoWInterface id), or {}."""
+    path = cache_file(source)
     try:
         stamp = (str(path), path.stat().st_mtime)
     except OSError:
         return {}
-    if stamp not in _CURSEFORGE_IDS:
-        _CURSEFORGE_IDS.clear()
+    if _LISTINGS.get(source, (None,))[0] != stamp:
         index = {}
-        for e in source_entries("curseforge"):
-            index[e["id"]] = e
+        for e in source_entries(source):
+            index[str(e["id"]).lower()] = e
             if str(e.get("numericId", "")).isdigit():
                 index[e["numericId"]] = e
-        _CURSEFORGE_IDS[stamp] = index
-    return _CURSEFORGE_IDS[stamp].get(str(ident).lower(), {})
+        _LISTINGS[source] = (stamp, index)
+    return _LISTINGS[source][1].get(str(ident).lower(), {})
+
+
+def _curseforge_listing(ident):
+    return listing("curseforge", ident)
 
 
 def curseforge_id(ident):

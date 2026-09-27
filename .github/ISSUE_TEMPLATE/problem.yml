@@ -1,0 +1,42 @@
+name: Something isn't working
+description: An addon won't install or update, the app shows something wrong, or it crashed.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. In the app, go to **Settings → Copy details for a report** and paste the result below. It lists your game version and recent activity, not your files or account.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, and what did you expect to happen instead?
+      placeholder: I clicked Install on Questie and got "…"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we see it happen?
+      placeholder: |
+        1. Open Browse
+        2. Search for …
+        3. Click Install
+  - type: textarea
+    id: details
+    attributes:
+      label: Details from the app
+      description: Settings → Copy details for a report.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: omarchy
+    attributes:
+      label: Omarchy version
+      description: Run `omarchy version` in a terminal.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, a link to the addon's page, or how you installed World of Warcraft (the Battle.net that comes with Omarchy, Steam, Lutris, …).

@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import shutil
 import tempfile
+import time
 import urllib.parse
 
 import wowdir
@@ -262,4 +263,11 @@ def staging_dir(game):
     """A scratch folder beside AddOns, so moving extracted folders into place is a rename."""
     parent = Path(game["addons"]).parent
     parent.mkdir(parents=True, exist_ok=True)
+    # Clear out folders left behind by an install that was interrupted a day or more ago.
+    for old in parent.glob(STAGING_PREFIX + "*"):
+        try:
+            if time.time() - old.stat().st_mtime > 86400:
+                shutil.rmtree(old, ignore_errors=True)
+        except OSError:
+            pass
     return Path(tempfile.mkdtemp(prefix=STAGING_PREFIX, dir=parent))

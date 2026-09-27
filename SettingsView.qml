@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
 import "ui" as UI
 
 ScrollView {
@@ -80,11 +81,31 @@ ScrollView {
                 + "•  You can still turn addons on or off per character from the in-game AddOns list."
         }
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: UI.Theme.border }
+        UI.Label { text: "HAVING A PROBLEM?"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
+        UI.Label {
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.45; color: UI.Theme.muted
+            text: "Report it on GitHub. Copy the details below and paste them into the report. They list your game version and recent activity, not your files or account."
+        }
+        Flow {
+            Layout.fillWidth: true
+            spacing: 8
+            UI.ActionButton { text: "Report a problem ↗"; onClicked: Qt.openUrlExternally("https://github.com/ztrek7/omarchy-wow-addons/issues/new/choose") }
+            UI.ActionButton {
+                id: copyDetails
+                objectName: "copyDetails"
+                property bool copied: false
+                text: copied ? "Copied" : "Copy details for a report"
+                onClicked: { Quickshell.clipboardText = root.app.reportDetails(); copied = true; copiedTimer.restart() }
+                Timer { id: copiedTimer; interval: 2500; onTriggered: copyDetails.copied = false }
+            }
+        }
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: UI.Theme.border }
         UI.Label { text: "ABOUT"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
         UI.Label {
             Layout.fillWidth: true
             wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.45; color: UI.Theme.muted
-            text: "Addons come from CurseForge and WoWInterface only (" + (root.app.catalogInfo.count || 0).toLocaleString(Qt.locale(), "f", 0) + " in the catalog right now). "
+            text: "WoW Addons" + (root.app.setup.appVersion ? " " + root.app.setup.appVersion : "") + ". Addons come from CurseForge and WoWInterface only (" + (root.app.catalogInfo.count || 0).toLocaleString(Qt.locale(), "f", 0) + " in the catalog right now). "
                 + "The CurseForge list comes from the instawow project's public catalog and from CFWidget. Files always download straight from CurseForge or WoWInterface. "
                 + "Wago isn't supported because it requires a paid API key. You can still add a .zip you downloaded yourself.\n"
                 + "Not affiliated with Blizzard Entertainment, CurseForge, WoWInterface, or Wago. World of Warcraft is a trademark of Blizzard Entertainment."

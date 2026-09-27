@@ -40,7 +40,7 @@ Only CurseForge and WoWInterface, the two big addon sites. Files always download
 
 WoWInterface has a public list of its addons. CurseForge only gives API keys to approved apps. So the CurseForge list comes from the public catalog the [instawow](https://github.com/layday/instawow-data) project publishes every day, plus [CFWidget](https://www.cfwidget.com/) for logos, details, and file lists. Other managers that don't ask for a key work the same way.
 
-CFWidget's copy of a project occasionally stops updating. The app checks each file list against the catalog's last-updated date and won't install an old version from a stale copy. If the addon is also on WoWInterface, it installs from there instead and tells you.
+CFWidget's copy of a project occasionally stops updating. The app checks each file list against the catalog's last-updated date and won't install an old version from a stale copy. If WoWInterface has an up-to-date copy of the same addon, it installs that instead and tells you. If not, it says so, and you can download the addon from its page and add the `.zip`. The app never swaps in an older version just because it's available.
 
 [Wago](https://addons.wago.io) isn't supported. Wago only gives download access to people with a paid API key. When an addon is also on Wago, its details link to the Wago page.
 
@@ -52,6 +52,10 @@ CFWidget's copy of a project occasionally stops updating. The app checks each fi
 | Which site each addon was installed from | `~/.local/share/wow-addons/state.json` |
 | Addon catalog, refreshed every 6 hours | `~/.cache/wow-addons/` |
 | The app itself | `~/.local/share/wow-addons/app` |
+
+## Problems and ideas
+
+Open an [issue](https://github.com/ztrek7/omarchy-wow-addons/issues/new/choose). The app can copy the details a report needs: Settings → Copy details for a report. Pull requests are welcome too; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Development
 

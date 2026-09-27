@@ -137,6 +137,10 @@ App {
             game.activated(0)
             app.check(!browse.anyGame && browse.results.length === forGame, "back to the game in use")
             app.check(app.fullDate(Date.UTC(2026, 8, 21, 12)) === "September 21, 2026", "full dates")
+            let report = app.reportDetails()
+            app.check(report.indexOf("Game: WoW Classic Era 1.15.7") >= 0 && report.indexOf(Quickshell.env("HOME")) < 0, "report details: " + report)
+            bsearch.forceActiveFocus(); bsearch.text = "bags"
+            app.check(browse.clearSearch() && bsearch.text === "", "Escape clears a search first")
 
             // Only claim what a site lists: a 2019 addon for 1.13.2 is Classic Era, not WoW Forever.
             let shaman = byName("Old Blue Shaman")

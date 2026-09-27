@@ -25,7 +25,8 @@ from library import Problem
 
 CACHE = Path(os.environ.get("XDG_CACHE_HOME") or wowdir.HOME / ".cache") / "wow-addons"
 WOWI = "https://api.mmoui.com/v3/game/WOW"
-USER_AGENT = "omarchy-wow-addons/0.1 (+https://github.com/ztrek7/omarchy-wow-addons)"
+VERSION = "0.1.0"
+USER_AGENT = f"omarchy-wow-addons/{VERSION} (+https://github.com/ztrek7/omarchy-wow-addons)"
 CATALOG_TTL = 6 * 3600
 MAX_DOWNLOAD = 300 * 1024 * 1024
 MAX_UNPACKED = 1024 * 1024 * 1024
@@ -178,11 +179,12 @@ def details(source, ident):
 
 # --- CurseForge (through CFWidget) -----------------------------------------
 
-CURSEFORGE_PAGE = re.compile(r"^https://(?:www\.)?curseforge\.com/wow/addons/([a-z0-9][a-z0-9-]*)/?(?:[?#].*)?$", re.IGNORECASE)
+# Page links are only parsed for their ID, never fetched, so a missing https:// is fine.
+CURSEFORGE_PAGE = re.compile(r"^(?:https?://)?(?:www\.)?curseforge\.com/wow/addons/([a-z0-9][a-z0-9-]*)(?:[/?#].*)?$", re.IGNORECASE)
 CFWIDGET = "https://api.cfwidget.com"
 
 
-WOWI_PAGE = re.compile(r"^https://(?:www\.)?wowinterface\.com/downloads/(?:info|download)(\d+)", re.IGNORECASE)
+WOWI_PAGE = re.compile(r"^(?:https?://)?(?:www\.)?wowinterface\.com/downloads/(?:info|download)(\d+)", re.IGNORECASE)
 
 
 def wowinterface_page(text):
@@ -290,7 +292,7 @@ def addon_roots(names):
         # Addons sit side by side at one depth; deeper matches are bundled sub-folders.
         depth = min(found)
         return {folder.name: folder for folder in found[depth]}
-    # A GitHub source archive: repo-sha/Name.toc. Name the folder after its TOC.
+    # A source archive with the TOC one level down (project-main/Name.toc): name the folder after its TOC.
     shallow = [t for t in tocs if len(t.parts) == 2]
     stems = {re.sub(r"[-_](mainline|classic|vanilla|tbc|bcc|wrath|wotlkc|cata|mists)$", "", t.stem, flags=re.I) for t in shallow}
     if len(stems) == 1:

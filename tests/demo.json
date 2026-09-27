@@ -50,7 +50,8 @@
    "titan_classic": "WoW Titan Reforged",
    "cata_classic": "WoW Cataclysm Classic",
    "mists_classic": "WoW Mists of Pandaria Classic"
-  }
+  },
+  "appVersion": "0.1.0"
  },
  "addons": [
   {

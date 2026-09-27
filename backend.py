@@ -35,6 +35,7 @@ def overview(request):
     enabled = wowdir.load_config().get("sources", {})
     setup["sources"] = {name: enabled.get(name, True) is not False for name in catalog.SOURCES}
     setup["gameNames"] = wowdir.GAME_NAMES
+    setup["appVersion"] = sources.VERSION
     return {"setup": setup, "addons": addons, "gameRunning": wowdir.game_running(), "downloads": recent_zips()}
 
 
@@ -206,20 +207,47 @@ def add_requirements(game, state, keys):
     return notes
 
 
+FALLBACK_WINDOW = 30 * 86400 * 1000
+
+
+def listed_updated(choice):
+    """When the catalog last saw this site's listing change (ms), or 0 if unknown."""
+    return catalog.listing(choice.get("source") or choice.get("site") or "", choice.get("id") or "").get("updated", 0)
+
+
+def current_choices(choices):
+    """Drop sites whose listing is far behind the addon's newest one: another site's
+    year-old copy is no substitute for this week's release. Returns (kept, notes)."""
+    newest = max((listed_updated(c) for c in choices), default=0)
+    kept, notes = [], []
+    for choice in choices:
+        updated = listed_updated(choice)
+        if newest and updated and updated < newest - FALLBACK_WINDOW:
+            name = SOURCE_NAMES.get(choice.get("source") or choice.get("site"), "Another site")
+            notes.append(f"{name}'s listing hasn't been updated since {time.strftime('%B %-d, %Y', time.localtime(updated / 1000))}, so it wasn't used.")
+        else:
+            kept.append(choice)
+    return kept, notes
+
+
 def install_first(choices, game, state):
     """Install from the first site that works. Returns (message, key); raises the first site's problem if none do."""
+    first, rest = choices[:1], choices[1:]
+    rest, skipped = current_choices(first + rest)
+    rest = [c for c in rest if c is not first[0]] if first else rest
     problems = []
-    for choice in choices:
+    for choice in first + rest:
         try:
             message, key = install_one(choice, game, state)
         except Problem as error:
             problems.append((choice, error))
             continue
         if problems:
-            first, error = problems[0]
-            message += f" ({SOURCE_NAMES.get(first.get('source'), 'The first site')} didn't work: {error})"
+            failed, error = problems[0]
+            message += f" ({SOURCE_NAMES.get(failed.get('source') or failed.get('site'), 'The first site')} didn't work: {error})"
         return message, key
-    raise problems[0][1]
+    advice = " You can download it from the addon's page and add the .zip." if skipped else ""
+    raise Problem(" ".join([str(problems[0][1])] + skipped) + advice)
 
 
 def install(request):
@@ -227,6 +255,13 @@ def install(request):
     _, game = current_game()
     state = library.load_state()
     choices = [request] + [dict(alt) for alt in request.get("alternatives") or [] if alt.get("source") in SOURCE_NAMES]
+    if "alternatives" not in request:
+        # A pasted page link: the same addon's listing on the other site is the fallback.
+        text = request.get("location") or ""
+        wowi, project = sources.wowinterface_page(text), sources.curseforge_project(text)
+        site = ("wowinterface", wowi) if wowi else ("curseforge", project) if project else (None, None)
+        if site[1]:
+            choices = [dict(request, site=site[0], id=site[1])] + other_sites(catalog.load_entries()).get((site[0], str(site[1]).lower()), [])
     message, key = install_first(choices, game, state)
     return {"message": " ".join([message] + add_requirements(game, state, [key]))}
 
@@ -272,13 +307,14 @@ def other_sites(entries):
 
 
 def with_fallbacks(row, index):
-    """An addon's own site first, then the same addon on the other site, in case the first can't answer."""
+    """An addon's own site first, then the same addon on the other site, in case the first can't answer.
+    A site whose listing is far behind the newest one is left out, so it can't offer an older version."""
     links = list(row["links"])
     for link in list(links):
         for other in index.get((link["source"], str(link["id"]).lower()), []):
             if all(other["source"] != l["source"] for l in links):
                 links.append(other)
-    return links
+    return current_choices(links)[0]
 
 
 def check(request):
