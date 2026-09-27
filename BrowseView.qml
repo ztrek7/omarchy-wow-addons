@@ -15,7 +15,7 @@ Item {
     readonly property var info: detailRef ? app.details[detailRef.source + ":" + detailRef.id] || null : null
     readonly property int major: app.game?.major || 0
     readonly property string flavour: app.game?.flavour || ""
-    readonly property var sourceOrder: ["curseforge", "wowinterface", "tukui"]
+    readonly property var sourceOrder: ["curseforge", "wowinterface"]
     readonly property var categories: {
         let counts = {}
         app.catalog.forEach(e => { if (e.category) counts[e.category] = (counts[e.category] || 0) + 1 })
@@ -55,7 +55,7 @@ Item {
         if (r.flavours) return flavour ? r.flavours.indexOf(flavour) >= 0 : false
         return (r.gameVersions || []).some(v => parseInt(v) === major)
     }
-    // Browse sources the user has on. GitHub and Wago only show in details.
+    // Browse sources the user has on. Wago only appears as a page link in details.
     function usable(e) { return e.sources.filter(r => app.sourceOn[r.source] === true) }
     // Where Install gets it: a source made for this game, most recently updated.
     function bestRef(e) {
@@ -63,7 +63,7 @@ Item {
     }
     // WoWInterface has screenshots, so its description is preferred.
     function infoRef(e) {
-        return ["wowinterface", "curseforge", "tukui"].map(s => e.sources.find(r => r.source === s)).find(r => r) || null
+        return ["wowinterface", "curseforge"].map(s => e.sources.find(r => r.source === s)).find(r => r) || null
     }
     function gameText(e) {
         if (!major) return ""
@@ -225,7 +225,7 @@ Item {
                 anchors.centerIn: parent
                 width: parent.width - 40
                 visible: !root.results.length
-                text: root.catalogLoading && !root.app.catalog.length ? "Loading the CurseForge, WoWInterface, and Tukui catalogs…"
+                text: root.catalogLoading && !root.app.catalog.length ? "Loading the CurseForge and WoWInterface catalogs…"
                     : !root.app.catalog.length ? (root.app.catalogMessage || "The catalog isn't loaded.") + "\nUse Refresh catalog to try again."
                     : !root.sourceOrder.some(s => root.app.sourceOn[s]) ? "Every source is turned off.\nTurn one on above."
                     : "No addons match.\nTry “Any game version”, a longer time range, or another category."
@@ -275,14 +275,14 @@ Item {
                     id: sourceRow
                     required property var modelData
                     readonly property bool wago: modelData.source === "wago"
-                    readonly property bool on: wago || modelData.source === "github" || root.app.sourceOn[modelData.source] === true
+                    readonly property bool on: wago || root.app.sourceOn[modelData.source] === true
                     Layout.fillWidth: true
                     spacing: 10
                     opacity: on ? 1 : 0.5
                     UI.Label { Layout.preferredWidth: 104; text: root.app.sourceName(sourceRow.modelData.source); font.weight: Font.DemiBold; font.pixelSize: 12 }
                     UI.Label {
                         Layout.fillWidth: true
-                        text: sourceRow.wago ? "Download it on Wago, then use Add addon → .zip. Wago's data needs a paid key, so this app doesn't read it."
+                        text: sourceRow.wago ? "Also on Wago. Wago's data needs a paid key, so download it there and use Add addon → .zip if you prefer it."
                             : ["Updated " + root.app.monthYear(sourceRow.modelData.updated), sourceRow.modelData.downloads ? "↓ " + root.app.compact(sourceRow.modelData.downloads) : "",
                                root.fitsRef(sourceRow.modelData) ? "made for your game" : "not tagged for your game", sourceRow.on ? "" : "source turned off"].filter(x => x).join("  ·  ")
                         color: UI.Theme.muted; font.pixelSize: 11; wrapMode: Text.Wrap

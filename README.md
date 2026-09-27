@@ -1,15 +1,16 @@
 # WoW Addons for Omarchy
 
-A native Omarchy app for World of Warcraft addons on Linux. Browse, install, disable, and remove addons without the CurseForge app. It follows your active Omarchy theme and uses only Quickshell, Qt Quick, and the Python standard library.
+A native Omarchy app for World of Warcraft addons on Linux. Browse the two big moderated addon sites, CurseForge and WoWInterface, in one list. Install in a click, and keep addons enabled, updated, and complete, without the CurseForge app. It follows your active Omarchy theme and uses only Quickshell, Qt Quick, and the Python standard library.
 
 ![WoW Addons showing installed addons with filters and a details panel](assets/preview.png)
 
 *Preview rendered from built-in example data.*
 
-- **Installed**: every addon in your AddOns folder, including ones you copied in by hand. Filter by status (enabled, disabled, update available, out of date) and source, then sort by name, install date, what needs attention, or folder count. Modules such as `DBM-Raids` are grouped under their core addon.
-- **Browse**: CurseForge, WoWInterface, and Tukui in one list of about 17,000 addons. An addon listed on several sites appears once, with every site it's on. Install picks the most recently updated site that has a build for your game, and the details view lets you choose another site, its GitHub repository, or its Wago page. Toggle each site on or off; all start on. Search by name, author, or folder, and filter by category, game version, and last update. You can also hide what's installed. Sort by total downloads across sites, recent updates, or name.
-- **Add addon**: install the packaged release from a GitHub repository (`owner/repo`), a CurseForge addon page, an `https://` link to a .zip, or a .zip you downloaded. Recent downloads are offered as one-click picks.
-- **Updates**: checked automatically when the app opens and every 6 hours while it's open, or on demand with **Check updates**. Then update one addon or all of them. Addons you installed by hand are checked too, when their `.toc` says where they're published (`X-WoWI-ID`, `X-Curse-Project-ID`, `X-Tukui-ProjectID`, or a WoWInterface, CurseForge, or GitHub `X-Website`). If one source fails, the next is tried. Updating a hand install replaces its folder, and the addon is tracked from then on.
+- **Installed**: every addon in your AddOns folder, including ones you copied in by hand. Filter by status (enabled, disabled, update available, out of date, missing requirements) and source. Sort by name, install date, what needs attention, or folder count. Modules such as `DBM-Raids` are grouped under their core addon.
+- **Browse**: CurseForge and WoWInterface in one list of about 17,000 addons. An addon listed on both sites appears once, with both sites' downloads added up. Install picks the more recently updated site with a build for your game, and the details view lets you choose the other. Turn either site on or off; both start on. Search by name, author, or folder, and filter by category, game version, and last update. You can also hide what's installed. Sort by downloads, recent updates, or name.
+- **Requirements**: installing an addon also installs the addons it requires (its `.toc` `Dependencies`) from the same catalog, and turns on any that are disabled. Installed addons missing a requirement are flagged, with a button to fix it.
+- **Updates**: checked automatically when the app opens and every 6 hours while it's open, or on demand with **Check updates**. Update one addon or all of them. Addons you installed by hand are checked too, when their `.toc` names their CurseForge or WoWInterface listing (`X-Curse-Project-ID`, `X-WoWI-ID`, or `X-Website`). Updating a hand install replaces its folder, and the addon is tracked from then on.
+- **Add addon**: paste an addon's CurseForge or WoWInterface page, or pick a .zip you downloaded. Recent downloads are offered as one-click picks.
 - **Disable and enable** in one click; **remove** to the trash.
 - Finds Battle.net installs in Wine and Proton prefixes, and every game version inside them (`_retail_`, `_classic_`, `_classic_era_`, betas, and PTRs).
 
@@ -49,20 +50,18 @@ Game folders are detected under `~/Games/*/drive_c`, `~/.wine`, and Steam's Prot
 
 ## Sources and privacy
 
-No source needs an account or API key.
+The app downloads addons from CurseForge and WoWInterface only. Both sites host addons from their authors and moderate uploads. Nothing is installed from code repositories, file links, or other sites. The only other way to add an addon is a .zip you downloaded yourself. Neither site needs an account or API key.
 
 | Site | How the app reads it | Downloads from |
 | --- | --- | --- |
 | CurseForge | The daily community catalog published by [instawow](https://github.com/layday/instawow-data) for browsing, and [CFWidget](https://www.cfwidget.com/) for details and file lists | CurseForge's CDN (`edge.forgecdn.net`), checked against the listed file size |
 | WoWInterface | Its public API (`api.mmoui.com`) | `cdn.wowinterface.com`, checked against the published MD5 |
-| Tukui (ElvUI, Tukui) | Its public API (`api.tukui.org`) | `api.tukui.org` |
-| GitHub | Release lists (`api.github.com`) for repositories linked from the catalog, or ones you add | `github.com` release assets |
 
-CurseForge's official API only issues keys to approved applications. The community catalog and CFWidget are built by people who hold such keys and publish the results openly. That's how other key-free managers work too.
+CurseForge's official API only issues keys to approved applications. The community catalog and CFWidget are built by people who hold such keys and publish the results openly. That's how other key-free managers work too. The catalog also records where else an addon is published. The app uses that only to recognize the same addon on both sites, never as a place to download from.
 
-**Wago Addons** isn't a source. Its data API needs a key that Wago gives to paying supporters, and its `robots.txt` disallows automated downloads. When an addon is also on Wago, its details link to the Wago page, and most Wago addons are also on CurseForge or WoWInterface.
+**Wago Addons** isn't a source. Its data API needs a key that Wago gives to paying supporters, and its `robots.txt` disallows automated downloads. When an addon is also on Wago, its details link to the Wago page. **Tukui** isn't a source either: it hosts just two addons.
 
-The app uses no analytics or root. For many GitHub update checks, set `GITHUB_TOKEN` to raise GitHub's anonymous limit of 60 requests an hour.
+The app uses no accounts, analytics, or root.
 
 ## Development
 
@@ -72,6 +71,6 @@ WOW_ADDONS_DEMO=1 quickshell -n -p "$PWD/Smoke.qml"          # UI filters and so
 quickshell -n -p "$PWD/Verify.qml"                           # read-only check against your install
 ```
 
-`backend.py` is the JSON bridge the window calls. `wowdir.py` finds installs and reads `.toc` files, `library.py` changes the AddOns folder, and `sources.py` talks to each site and unpacks archives, and `catalog.py` merges the sites' lists for Browse.
+`backend.py` is the JSON bridge the window calls. `wowdir.py` finds installs and reads `.toc` files, `library.py` changes the AddOns folder, and `sources.py` talks to CurseForge and WoWInterface and unpacks archives, and `catalog.py` merges the two sites' lists for Browse.
 
-Not affiliated with Blizzard Entertainment, CurseForge, WoWInterface, Tukui, or Wago. World of Warcraft is a trademark of Blizzard Entertainment, Inc.
+Not affiliated with Blizzard Entertainment, CurseForge, WoWInterface, or Wago. World of Warcraft is a trademark of Blizzard Entertainment, Inc.

@@ -84,22 +84,22 @@ def details(request):
 
 
 def resolve_source(request, game):
-    """Work out what to install: (record, {"url", "md5", "size"} to download, or {"path"} of a local .zip)."""
+    """Work out what to install: (record, {"url", "md5", "size"} to download, or {"path"} of a local .zip).
+
+    Only CurseForge and WoWInterface are downloaded from. Anything else must be
+    a .zip the user already has.
+    """
     kind = request.get("source")
     text = (request.get("location") or "").strip()
-    if kind == "wowinterface":
-        info = sources.wowi_details(request["id"])
+    wowi = request.get("id") if kind == "wowinterface" else sources.wowinterface_page(text)
+    if wowi:
+        info = sources.wowi_details(wowi)
         if not info["download"]:
             raise Problem("WoWInterface has no download for that addon right now.")
         record = {"key": f"wowi:{info['id']}", "source": "wowinterface", "sourceId": info["id"], "name": info["name"],
                   "version": info["version"], "updated": info["updated"], "author": info["author"],
                   "url": f"https://www.wowinterface.com/downloads/info{info['id']}"}
         return record, {"url": info["download"], "md5": info["md5"]}
-    if kind == "tukui":
-        release = sources.tukui_release(request["id"])
-        record = {"key": f"tukui:{release['id']}", "source": "tukui", "sourceId": release["id"], "name": release["name"],
-                  "version": release["version"], "author": release["author"], "url": release["url"]}
-        return record, {"url": release["download"]}
     project = request.get("id") if kind == "curseforge" else sources.curseforge_project(text)
     if project:
         release = sources.curseforge_release(project, game)
@@ -109,20 +109,11 @@ def resolve_source(request, game):
     path = Path(text).expanduser()
     if text and path.is_file():
         return {"key": f"file:{path.name}", "source": "file", "sourceId": path.name, "name": path.stem}, {"path": path}
-    repo = sources.github_repo(text or request.get("id", "")) if kind in ("github", None, "") else None
-    if repo:
-        release = sources.github_release(repo, game)
-        record = {"key": f"github:{repo.lower()}", "source": "github", "sourceId": repo, "name": repo.split("/")[1],
-                  "version": release["tag"], "releaseId": release["releaseId"], "asset": release["asset"],
-                  "url": f"https://github.com/{repo}"}
-        return record, {"url": release["download"]}
-    if text.startswith("https://"):
-        name = Path(text.split("?")[0]).name
-        return {"key": f"url:{text}", "source": "url", "sourceId": text, "name": Path(name).stem or "Addon", "url": text}, {"url": text}
-    raise Problem("Enter a GitHub repository, a CurseForge addon page, an https:// link to a .zip, or the path of a .zip on this computer.")
+    raise Problem("Paste a CurseForge or WoWInterface addon page, or the path of a .zip you downloaded.")
 
 
 def install_one(request, game, state):
+    """Install one addon. Returns (message, record key)."""
     record, fetch = resolve_source(request, game)
     workspace = library.staging_dir(game)
     try:
@@ -133,24 +124,95 @@ def install_one(request, game, state):
         unpacked = workspace / "unpacked"
         unpacked.mkdir()
         staged = sources.extract_addons(archive, unpacked)
-        if record["source"] in ("url", "file"):
+        if record["source"] == "file":
             # No catalog identity: name it after the main folder so reinstalling replaces it.
             main = sorted(staged, key=lambda n: (len(n), n.lower()))[0]
-            record.update(key=f"{record['source']}:{main.lower()}", name=main)
+            record.update(key=f"file:{main.lower()}", name=main)
         result = library.install(game, staged, record, state)
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
-    folders = ", ".join(result["record"]["dirs"])
+    dirs = result["record"]["dirs"]
+    folders = ", ".join(dirs) if len(dirs) <= 4 else f"{len(dirs)} folders"
     extra = f" Replaced existing folders: {', '.join(result['replaced'])} (moved to trash)." if result["replaced"] else ""
-    return f"Installed {record['name']} {record.get('version', '')}".rstrip() + f" · {folders}.{extra}"
+    return f"Installed {record['name']} {record.get('version', '')}".rstrip() + f" · {folders}.{extra}", record["key"]
+
+
+def fits(ref, game):
+    if ref["source"] == "curseforge":
+        return game.get("flavour") in ref.get("flavours", [])
+    return any(v.split(".")[0] == str(game.get("major")) for v in ref.get("gameVersions", []))
+
+
+def requirement_source(folder, entries, game):
+    """The catalog listing that provides an addon folder, and the site to get it from."""
+    wanted = folder.lower()
+    candidates = [e for e in entries if wanted in (d.lower() for d in e["dirs"])]
+    refs = lambda e: [r for r in e["sources"] if r["source"] in catalog.SOURCES]
+    candidates = [e for e in candidates if refs(e)]
+    if not candidates:
+        return None, None
+    # Prefer the listing named after the folder (DBM-Core -> "Deadly Boss Mods (DBM-Core)"), then one for this game, then the most used.
+    entry = max(candidates, key=lambda e: (catalog.norm(folder) in catalog.norm(e["name"]) or e["dirs"][0].lower() == wanted,
+                                           any(fits(r, game) for r in refs(e)), sum(r.get("downloads", 0) for r in refs(e))))
+    ref = max(refs(entry), key=lambda r: (fits(r, game), r.get("updated", 0)))
+    return entry, ref
+
+
+def add_requirements(game, state, keys):
+    """Install the addons these ones require, and turn on required addons that are off. Returns notes."""
+    notes, tried, keys, fetched = [], set(), set(keys), set()
+    entries = None
+    for _ in range(4):  # Requirements can have their own.
+        rows = library.list_addons(game, state)
+        wanting = [r for r in rows if r["id"] in keys]
+        for row in wanting:
+            for folder in row["requiresDisabled"]:
+                owner = next((r for r in rows if any(d["name"].lower() == folder.lower() for d in r["dirs"])), None)
+                if owner and owner["state"] != "enabled" and folder.lower() not in tried:
+                    tried.add(folder.lower())
+                    library.set_enabled(game, owner["id"], True, state)
+                    notes.append(f"Turned on {owner['name']}, which {row['name']} requires.")
+        missing = [(row, folder) for row in wanting for folder in row["missing"] if folder.lower() not in tried]
+        if not missing:
+            break
+        if entries is None:
+            try:
+                catalog.refresh()
+            except Problem:
+                pass
+            entries = catalog.load_entries()
+        for row, folder in missing:
+            tried.add(folder.lower())
+            entry, ref = requirement_source(folder, entries, game)
+            if not entry:
+                notes.append(f"{row['name']} needs {folder}, which isn't on CurseForge or WoWInterface.")
+                continue
+            if (ref["source"], ref["id"]) in fetched:
+                continue  # One listing often provides several required folders.
+            fetched.add((ref["source"], ref["id"]))
+            try:
+                _, key = install_one({"source": ref["source"], "id": ref["id"]}, game, state)
+                keys.add(key)
+                notes.append(f"Also installed {entry['name']}, which {row['name']} requires.")
+            except Problem as error:
+                notes.append(f"{row['name']} needs {entry['name']}, but it couldn't be installed: {error}")
+    return notes
 
 
 def install(request):
     _, game = current_game()
-    return {"message": install_one(request, game, library.load_state())}
+    state = library.load_state()
+    message, key = install_one(request, game, state)
+    return {"message": " ".join([message] + add_requirements(game, state, [key]))}
 
 
-SOURCE_NAMES = {"wowinterface": "WoWInterface", "curseforge": "CurseForge", "tukui": "Tukui", "github": "GitHub"}
+def requirements(request):
+    _, game = current_game()
+    notes = add_requirements(game, library.load_state(), [request["id"]])
+    return {"message": " ".join(notes) or "Nothing else is needed."}
+
+
+SOURCE_NAMES = {"wowinterface": "WoWInterface", "curseforge": "CurseForge"}
 
 
 def newest(link, row, record, game, wowi):
@@ -163,17 +225,11 @@ def newest(link, row, record, game, wowi):
         if record:
             return entry["version"], entry["updated"] > record.get("updated", 0) or entry["version"] != record.get("version")
         return entry["version"], not sources.same_version(entry["version"], installed)
-    if source == "tukui":
-        latest = sources.tukui_release(ident)["version"]
-        return latest, not sources.same_version(latest, record.get("version") if record else installed)
-    if source == "curseforge":
-        release = sources.curseforge_release(ident, game)
-        latest, newer = release["version"], record and release["fileId"] != record.get("fileId")
-    else:
-        release = sources.github_release(ident, game)
-        latest, newer = release["tag"], record and release["releaseId"] != record.get("releaseId")
+    release = sources.curseforge_release(ident, game)
+    if record:
+        return release["version"], release["fileId"] != record.get("fileId")
     # Hand installs have no record, so compare with the version in their TOC.
-    return latest, bool(newer) if record else not sources.same_version(latest, installed)
+    return release["version"], not sources.same_version(release["version"], installed)
 
 
 def check(request):
@@ -224,8 +280,8 @@ def update(request):
         problems = []
         for link in links:
             try:
-                message = install_one({"source": link["source"], "id": link["id"]}, game, state)
-                results.append({"id": key, "ok": True, "message": message})
+                message, new_key = install_one({"source": link["source"], "id": link["id"]}, game, state)
+                results.append({"id": key, "ok": True, "message": " ".join([message] + add_requirements(game, state, [new_key]))})
                 break
             except Problem as error:
                 problems.append(f"{SOURCE_NAMES[link['source']]}: {error}")
@@ -235,7 +291,7 @@ def update(request):
 
 
 ACTIONS = {"list": overview, "configure": configure, "enable": toggle, "disable": toggle, "remove": remove,
-           "catalog": browse_catalog, "details": details, "install": install, "check": check, "update": update}
+           "catalog": browse_catalog, "details": details, "install": install, "requirements": requirements, "check": check, "update": update}
 
 
 def main():

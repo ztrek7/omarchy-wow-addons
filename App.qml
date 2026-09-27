@@ -44,7 +44,7 @@ Scope {
     readonly property int enabledCount: addons.filter(a => a.state !== "disabled").length
     readonly property int outOfDateCount: addons.filter(a => a.outOfDate).length
     // Browse sources the user has turned on; saved to the config file.
-    property var sourceOn: ({curseforge: true, wowinterface: true, tukui: true})
+    property var sourceOn: ({curseforge: true, wowinterface: true})
     // "source:id" -> installed addon id, from install records and TOC-declared sources.
     readonly property var installedKeys: {
         let keys = {}
@@ -73,7 +73,7 @@ Scope {
     function versionText(v) { return !v ? "" : /^\d/.test(v) ? "v" + v : v }
     function monthYear(ms) { return ms ? new Date(ms).toLocaleDateString(Qt.locale(), "MMM yyyy") : "unknown" }
     function sourceName(source) {
-        return ({wowinterface: "WoWInterface", curseforge: "CurseForge", tukui: "Tukui", wago: "Wago", github: "GitHub", url: "Zip link", file: "Zip file", manual: "Manual install"})[source] || source
+        return ({wowinterface: "WoWInterface", curseforge: "CurseForge", wago: "Wago", file: "Zip file", manual: "Manual install"})[source] || source
     }
 
     function log(message, error) {
@@ -90,7 +90,7 @@ Scope {
         // A refresh after a change keeps that change's message in the status line.
         if (!followUp) {
             failed = false
-            status = ({list: "Reading your AddOns folder…", install: "Downloading and installing…",
+            status = ({list: "Reading your AddOns folder…", install: "Downloading and installing…", requirements: "Installing what it needs…",
                        update: "Installing updates…", remove: "Moving to the trash…", enable: "Enabling…", disable: "Disabling…", configure: "Saving settings…"})[data.action] || "Working…"
         }
         worker.command = ["python3", helper(), JSON.stringify(data)]
@@ -493,7 +493,7 @@ Scope {
                 }
                 UI.Label {
                     Layout.fillWidth: true
-                    text: app.dialogAction === "add" ? "Paste a GitHub repository, a CurseForge addon page, a link to a .zip, or the path of a .zip you downloaded. Releases are picked for " + app.gameLabel() + "."
+                    text: app.dialogAction === "add" ? "Paste an addon's CurseForge or WoWInterface page, or the path of a .zip you downloaded. The right file is picked for " + app.gameLabel() + "."
                         : app.dialogAction === "remove" ? "Its " + (app.dialogTarget.dirs?.length || 0) + " folder" + (app.dialogTarget.dirs?.length === 1 ? "" : "s") + " move to the trash, so you can restore them. Settings the addon saved in WTF are kept."
                         : app.dialogAction === "replace" ? (app.dialogTarget.name || "This addon") + " installs folders you already have: " + (app.dialogTarget.clashes || []).join(", ") + ". The current copies move to the trash."
                         : app.updateIds.map(id => "  •  " + (app.addons.find(a => a.id === id)?.name || id) + "  →  " + (app.checks[id]?.latest || "")).join("\n")
@@ -505,7 +505,7 @@ Scope {
                     visible: app.dialogAction === "add"
                     Layout.fillWidth: true
                     implicitHeight: 43
-                    placeholderText: "owner/repo  ·  curseforge.com/wow/addons/…  ·  ~/Downloads/addon.zip"
+                    placeholderText: "curseforge.com/wow/addons/…  ·  wowinterface.com/downloads/…  ·  ~/Downloads/addon.zip"
                     onAccepted: { if (confirmButton.enabled) confirmButton.clicked() }
                 }
                 ColumnLayout {

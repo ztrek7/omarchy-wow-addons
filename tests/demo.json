@@ -39,8 +39,7 @@
   },
   "sources": {
    "curseforge": true,
-   "wowinterface": true,
-   "tukui": true
+   "wowinterface": true
   }
  },
  "addons": [
@@ -83,7 +82,9 @@
      "source": "curseforge",
      "id": "trade-ledger"
     }
-   ]
+   ],
+   "missing": [],
+   "requiresDisabled": []
   },
   {
    "id": "wowi:9001",
@@ -130,10 +131,12 @@
      "source": "wowinterface",
      "id": "9001"
     }
-   ]
+   ],
+   "missing": [],
+   "requiresDisabled": []
   },
   {
-   "id": "github:example/bagsort",
+   "id": "curseforge:bagsort",
    "name": "BagSort",
    "version": "v3.2.0",
    "tocVersion": "v3.2.0",
@@ -159,17 +162,19 @@
    "outOfDate": false,
    "loadable": true,
    "managed": true,
-   "source": "github",
-   "sourceId": "example/bagsort",
+   "source": "curseforge",
+   "sourceId": "bagsort",
    "updated": 0,
    "installedAt": "2026-09-22T18:00:00+00:00",
    "path": "/tmp/demo/Interface/AddOns/BagSort",
    "links": [
     {
-     "source": "github",
-     "id": "example/bagsort"
+     "source": "curseforge",
+     "id": "bagsort"
     }
-   ]
+   ],
+   "missing": [],
+   "requiresDisabled": []
   },
   {
    "id": "wowi:9002",
@@ -208,7 +213,9 @@
      "source": "wowinterface",
      "id": "9002"
     }
-   ]
+   ],
+   "missing": [],
+   "requiresDisabled": []
   },
   {
    "id": "local:OldTimers",
@@ -242,7 +249,11 @@
    "updated": 0,
    "installedAt": "",
    "path": "/tmp/demo/Interface/AddOns/OldTimers",
-   "links": []
+   "links": [],
+   "missing": [
+    "TimerLib"
+   ],
+   "requiresDisabled": []
   }
  ],
  "checks": {
@@ -251,10 +262,10 @@
    "latest": "2.5.0",
    "source": "wowinterface"
   },
-  "github:example/bagsort": {
+  "curseforge:bagsort": {
    "state": "current",
    "latest": "v3.2.0",
-   "source": "github"
+   "source": "curseforge"
   },
   "local:TradeLedger": {
    "state": "available",
@@ -3400,32 +3411,6 @@
      "numericId": "802"
     }
    ]
-  },
-  {
-   "key": "tukui:elvui-demo",
-   "name": "Example UI Suite",
-   "author": "Example",
-   "category": "",
-   "thumb": "",
-   "summary": "A full UI replacement.",
-   "dirs": [
-    "ExampleUI",
-    "ExampleUI_Options"
-   ],
-   "sources": [
-    {
-     "source": "tukui",
-     "id": "elvui-demo",
-     "url": "https://tukui.org",
-     "updated": 1787924725412,
-     "downloads": 0,
-     "gameVersions": [
-      "12.1.0",
-      "1.15.9"
-     ],
-     "version": "15.0"
-    }
-   ]
   }
  ],
  "details": {
@@ -3451,7 +3436,7 @@
   }
  ],
  "catalogInfo": {
-  "count": 108,
+  "count": 107,
   "sources": {
    "curseforge": {
     "count": 9,
@@ -3460,11 +3445,6 @@
    },
    "wowinterface": {
     "count": 103,
-    "fetchedAt": 0,
-    "error": ""
-   },
-   "tukui": {
-    "count": 1,
     "fetchedAt": 0,
     "error": "offline"
    }

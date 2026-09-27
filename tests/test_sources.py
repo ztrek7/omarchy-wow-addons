@@ -27,7 +27,6 @@ class Text(FakeInstall):
 
     def test_html_and_markdown(self):
         self.assertEqual(sources.html_text("<p>Hi &amp; bye</p><ul><li>One</li><li>Two</li></ul>"), "Hi & bye\n  •  One\n  •  Two")
-        self.assertEqual(sources.markdown_text("## About\n\n**Bold** [link](https://x) ![img](https://i)"), "About\n\nBold link")
 
     def test_bbcode(self):
         text = sources.bbcode_text('[SIZE="4"][B]Hi[/B][/SIZE]\r\n[LIST][*]One[*]Two[/LIST] [url="https://x"]link[/url] [img]https://i[/img] &amp;')
@@ -38,50 +37,11 @@ class Text(FakeInstall):
             sources.fetch("http://example.invalid/x.zip")
 
 
-class GitHub(FakeInstall):
-    def test_repo_parsing(self):
-        self.assertEqual(sources.github_repo("https://github.com/Owner/Addon.git"), "Owner/Addon")
-        self.assertEqual(sources.github_repo("owner/addon"), "owner/addon")
-        self.assertIsNone(sources.github_repo("https://github.com/o/r/releases/download/v1/x.zip"))
-        self.assertIsNone(sources.github_repo("not a repo"))
-
-    def release(self, *names):
-        return {"assets": [{"name": n, "browser_download_url": f"https://example.invalid/{n}"} for n in names]}
-
-    def test_release_json_picks_matching_interface(self):
-        release = self.release("A-v1.zip", "A-v1-classic.zip", "A-v1-nolib.zip", "release.json")
-        manifest = {"releases": [
-            {"filename": "A-v1.zip", "nolib": False, "metadata": [{"flavor": "mainline", "interface": 120100}]},
-            {"filename": "A-v1-nolib.zip", "nolib": True, "metadata": [{"flavor": "vanilla", "interface": 11507}]},
-            {"filename": "A-v1-classic.zip", "nolib": False, "metadata": [{"flavor": "vanilla", "interface": 11507}]}]}
-        chosen = sources.choose_asset(release, self.game, lambda url: manifest)
-        self.assertEqual(chosen["name"], "A-v1-classic.zip")
-
-    def test_file_names_without_manifest(self):
-        release = self.release("A-v1.zip", "A-v1-classic.zip", "A-v1-bcc.zip")
-        self.assertEqual(sources.choose_asset(release, self.game)["name"], "A-v1-classic.zip")
-        retail = dict(self.game, interface=120100, major=12)
-        self.assertEqual(sources.choose_asset(release, retail)["name"], "A-v1.zip")
-        self.assertIsNone(sources.choose_asset(self.release("A-v1-bcc.zip"), self.game))
-        self.assertIsNone(sources.choose_asset(self.release("notes.txt"), self.game))
-
-
-class Tukui(FakeInstall):
-    ITEMS = [{"id": -2, "slug": "elvui", "author": "Elv", "name": "ElvUI", "url": "https://api.tukui.org/v1/download/elvui/x",
-              "version": "15.26", "patch": ["12.1.0", "1.15.9"], "last_update": "2026-08-29", "web_url": "https://tukui.org/elvui",
-              "small_desc": "UI", "desc": "## About", "screenshot_url": "https://storage.example/1.jpg",
-              "gallery_url": "['https://storage.example/2.jpg']", "directories": ["ElvUI", "ElvUI_Options"]}]
-
-    def test_release_by_slug_or_id(self):
-        with patch.object(sources, "fetch_json", return_value=self.ITEMS):
-            self.assertEqual(sources.tukui_release("elvui")["version"], "15.26")
-            release = sources.tukui_release("-2")
-            self.assertEqual(release["images"], ["https://storage.example/1.jpg", "https://storage.example/2.jpg"])
-            with self.assertRaises(sources.Problem):
-                sources.tukui_release("nope")
-
-
 class CurseForge(FakeInstall):
+    def test_wowinterface_page(self):
+        self.assertEqual(sources.wowinterface_page("https://www.wowinterface.com/downloads/info7032-TomTom.html"), "7032")
+        self.assertIsNone(sources.wowinterface_page("https://evil.example/downloads/info7032"))
+
     def test_project_parsing(self):
         self.assertEqual(sources.curseforge_project("https://www.curseforge.com/wow/addons/Auctionator/"), "auctionator")
         self.assertIsNone(sources.curseforge_project("https://www.curseforge.com/minecraft/mc-mods/x"))

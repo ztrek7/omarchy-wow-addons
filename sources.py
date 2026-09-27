@@ -1,10 +1,9 @@
-"""Addon sources: WoWInterface, CurseForge, Tukui, GitHub releases, and .zip archives.
+"""Addon sources: CurseForge and WoWInterface, plus .zip files the user downloaded.
 
-Nothing here needs an API key. WoWInterface and Tukui publish open APIs.
-CurseForge's own API requires an approved key, so CurseForge projects are read
-from CFWidget, a public mirror, and files come from CurseForge's CDN. Wago
-Addons is left out: its data API needs a key and its site disallows automated
-downloads.
+Only these two moderated sites are used, so nothing installs from arbitrary
+repositories or links. Neither needs an API key: WoWInterface publishes an
+open API, and CurseForge projects are read from CFWidget, a public mirror of
+CurseForge's data, with files downloaded from CurseForge's own CDN.
 """
 import hashlib
 import html
@@ -24,7 +23,6 @@ from library import Problem
 
 CACHE = Path(os.environ.get("XDG_CACHE_HOME") or wowdir.HOME / ".cache") / "wow-addons"
 WOWI = "https://api.mmoui.com/v3/game/WOW"
-TUKUI = "https://api.tukui.org/v1/addons"
 USER_AGENT = "omarchy-wow-addons/0.1 (+https://github.com/ztrek7/omarchy-wow-addons)"
 CATALOG_TTL = 6 * 3600
 MAX_DOWNLOAD = 300 * 1024 * 1024
@@ -36,9 +34,6 @@ def fetch(url, limit=64 * 1024 * 1024, accept="application/json"):
     if urllib.parse.urlsplit(url).scheme != "https":
         raise Problem("Only HTTPS downloads are allowed.")
     headers = {"User-Agent": USER_AGENT, "Accept": accept}
-    token = os.environ.get("GITHUB_TOKEN")
-    if token and urllib.parse.urlsplit(url).hostname == "api.github.com":
-        headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=45) as response:
@@ -46,8 +41,6 @@ def fetch(url, limit=64 * 1024 * 1024, accept="application/json"):
                 raise Problem("The download redirected away from HTTPS.")
             data = response.read(limit + 1)
     except urllib.error.HTTPError as error:
-        if error.code == 403 and "github" in url:
-            raise Problem("GitHub's hourly limit for anonymous requests was reached. Try again later, or set GITHUB_TOKEN.")
         raise Problem(f"{urllib.parse.urlsplit(url).hostname} answered {error.code} {error.reason}.")
     except (urllib.error.URLError, TimeoutError, OSError) as error:
         raise Problem(f"Couldn't reach {urllib.parse.urlsplit(url).hostname}: {getattr(error, 'reason', error)}")
@@ -155,50 +148,6 @@ def html_text(value):
     return re.sub(r"\n{3,}", "\n\n", text).strip()[:8000]
 
 
-def markdown_text(value):
-    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", value or "")
-    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
-    text = re.sub(r"^#+\s*", "", text, flags=re.MULTILINE).replace("**", "")
-    return re.sub(r"\n{3,}", "\n\n", text).strip()[:8000]
-
-
-# --- Tukui --------------------------------------------------------------------
-
-def compact_tukui(item):
-    gallery = item.get("gallery_url")
-    if isinstance(gallery, str):
-        gallery = re.findall(r"https://[^'\"\s,\]]+", gallery)
-    return {
-        "id": item["slug"], "numericId": str(item.get("id", "")), "name": item.get("name") or item["slug"],
-        "author": item.get("author") or "", "url": item.get("web_url") or "https://tukui.org",
-        "version": item.get("version") or "", "updated": _date_ms(item.get("last_update")),
-        "gameVersions": item.get("patch") or [], "dirs": item.get("directories") or [item.get("name") or item["slug"]],
-        "summary": item.get("small_desc") or "", "description": markdown_text(item.get("desc")),
-        "thumb": item.get("logo_square_url") or item.get("screenshot_url") or "",
-        "images": [u for u in [item.get("screenshot_url")] + list(gallery or []) if isinstance(u, str) and u.startswith("https://")][:6],
-        "download": item.get("url") or "",
-    }
-
-
-def _date_ms(value):
-    try:
-        return int(time.mktime(time.strptime(str(value)[:10], "%Y-%m-%d")) * 1000)
-    except ValueError:
-        return 0
-
-
-def tukui_release(project):
-    """Tukui lists only a handful of projects; look one up by slug or its numeric ID (-2 is ElvUI)."""
-    data = fetch_json(TUKUI)
-    for item in data if isinstance(data, list) else []:
-        if isinstance(item, dict) and str(project).lower() in (str(item.get("slug", "")).lower(), str(item.get("id"))):
-            entry = compact_tukui(item)
-            if not entry["download"].startswith("https://"):
-                break
-            return entry
-    raise Problem(f"Tukui doesn't list {project}.")
-
-
 # --- Details for Browse ---------------------------------------------------------
 
 def details(source, ident):
@@ -207,10 +156,6 @@ def details(source, ident):
         info = wowi_details(ident)
         return {"source": source, "id": str(ident), "name": info["name"], "author": info["author"], "description": info["description"],
                 "changelog": info["changelog"], "images": info["images"], "version": info["version"]}
-    if source == "tukui":
-        info = tukui_release(ident)
-        return {"source": source, "id": str(ident), "name": info["name"], "author": info["author"], "description": info["description"] or info["summary"],
-                "changelog": "", "images": info["images"], "version": info["version"]}
     if source == "curseforge":
         data = cfwidget(ident)
         members = [m.get("username") for m in data.get("members") or [] if isinstance(m, dict) and m.get("username")]
@@ -222,82 +167,18 @@ def details(source, ident):
     raise Problem("Details aren't available for that source.")
 
 
-# --- GitHub releases --------------------------------------------------------
-
-GITHUB_REPO = re.compile(r"^(?:https://github\.com/)?([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$")
-FLAVOR_WORDS = {1: ("vanilla", "classic_era", "era", "classic"), 2: ("tbc", "bcc", "classic"), 3: ("wrath", "wotlk", "classic"),
-                4: ("cata", "classic"), 5: ("mists", "mop", "classic")}
-
-
-def github_repo(text):
-    match = GITHUB_REPO.match((text or "").strip())
-    if not match:
-        return None
-    return f"{match.group(1)}/{match.group(2)}"
-
-
-def choose_asset(release, game, fetch_release_json=None):
-    """Pick the packaged .zip for this game from a GitHub release, or None."""
-    assets = [a for a in release.get("assets") or [] if a.get("browser_download_url", "").startswith("https://")]
-    zips = [a for a in assets if a["name"].lower().endswith(".zip")]
-    if not zips:
-        return None
-    manifest = next((a for a in assets if a["name"] == "release.json"), None)
-    interface, major = game.get("interface"), game.get("major")
-    if manifest and fetch_release_json:
-        try:
-            entries = fetch_release_json(manifest["browser_download_url"]).get("releases", [])
-        except (Problem, AttributeError):
-            entries = []
-        ranked = []
-        for entry in entries:
-            interfaces = [m.get("interface") for m in entry.get("metadata", []) if isinstance(m, dict)]
-            score = 0 if interface in interfaces else 1 if any(i and i // 10000 == major for i in interfaces) else 2
-            ranked.append((score, bool(entry.get("nolib")), entry.get("filename")))
-        for score, _, filename in sorted(ranked, key=lambda r: (r[0], r[1])):
-            if score < 2:
-                chosen = next((a for a in zips if a["name"] == filename), None)
-                if chosen:
-                    return chosen
-    # Without release.json, go by the packager's file names: Name-v1.zip, Name-v1-classic.zip, ...
-    ours = FLAVOR_WORDS.get(major, ("mainline", "retail"))
-    flavored = {w for group in FLAVOR_WORDS.values() for w in group} | {"mainline", "retail"}
-    full = [a for a in zips if "nolib" not in a["name"].lower()] or zips
-
-    def rank(asset):
-        name = asset["name"].lower()
-        return (0 if any(w in name for w in ours) else 1 if not any(w in name for w in flavored) else 2, len(name))
-    best = min(full, key=rank)
-    return best if rank(best)[0] < 2 else None
-
-
-def github_release(repo, game):
-    data = fetch_json(f"https://api.github.com/repos/{repo}/releases?per_page=10")
-    releases = [r for r in data if isinstance(r, dict) and not r.get("draft")] if isinstance(data, list) else []
-    stable = [r for r in releases if not r.get("prerelease")] or releases
-    if not stable:
-        raise Problem(f"{repo} has no GitHub releases. Download a packaged .zip from the author and install that file.")
-    release = stable[0]
-    asset = choose_asset(release, game, fetch_json)
-    if not asset:
-        packaged = any(a.get("name", "").lower().endswith(".zip") for a in release.get("assets") or [])
-        raise Problem(f"The latest {repo} release has no .zip for this game version." if packaged else
-                      f"The latest {repo} release has no packaged .zip. The author may publish on another site; install a downloaded .zip instead.")
-    return {
-        "repo": repo,
-        "tag": release.get("tag_name") or release.get("name") or "",
-        "releaseId": release.get("id"),
-        "published": release.get("published_at") or "",
-        "asset": asset["name"],
-        "download": asset["browser_download_url"],
-        "url": release.get("html_url") or f"https://github.com/{repo}",
-    }
-
-
 # --- CurseForge (through CFWidget) -----------------------------------------
 
 CURSEFORGE_PAGE = re.compile(r"^https://(?:www\.)?curseforge\.com/wow/addons/([a-z0-9][a-z0-9-]*)/?(?:[?#].*)?$", re.IGNORECASE)
 CFWIDGET = "https://api.cfwidget.com"
+
+
+WOWI_PAGE = re.compile(r"^https://(?:www\.)?wowinterface\.com/downloads/(?:info|download)(\d+)", re.IGNORECASE)
+
+
+def wowinterface_page(text):
+    match = WOWI_PAGE.match((text or "").strip())
+    return match.group(1) if match else None
 
 
 def curseforge_project(text):

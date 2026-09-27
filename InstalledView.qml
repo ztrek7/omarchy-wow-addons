@@ -16,23 +16,30 @@ Item {
             let text = (a.name + " " + a.notes + " " + a.author + " " + a.dirs.map(d => d.name).join(" ")).toLowerCase()
             return (!term || text.indexOf(term) >= 0)
                 && (status === 0 || (status === 1 && a.state !== "disabled") || (status === 2 && a.state !== "enabled")
-                    || (status === 3 && root.app.checks[a.id]?.state === "available") || (status === 4 && a.outOfDate))
-                && (origin === 0 || a.source === ["", "curseforge", "wowinterface", "tukui", "github"][origin]
-                    || (origin === 5 && !a.managed) || (origin === 6 && (a.source === "file" || a.source === "url")))
+                    || (status === 3 && root.app.checks[a.id]?.state === "available") || (status === 4 && a.outOfDate)
+                    || (status === 5 && (a.missing.length > 0 || a.requiresDisabled.length > 0)))
+                && (origin === 0 || a.source === ["", "curseforge", "wowinterface"][origin]
+                    || (origin === 3 && !a.managed) || (origin === 4 && a.source === "file"))
         })
         let sort = sortFilter.currentIndex
         return found.sort((a, b) => {
             if (sort === 1) return b.name.localeCompare(a.name)
             if (sort === 2) return (b.installedAt || "").localeCompare(a.installedAt || "") || a.name.localeCompare(b.name)
-            if (sort === 3) return (root.app.checks[b.id]?.state === "available") - (root.app.checks[a.id]?.state === "available") || b.outOfDate - a.outOfDate || a.name.localeCompare(b.name)
+            if (sort === 3) return root.attention(b) - root.attention(a) || a.name.localeCompare(b.name)
             if (sort === 4) return b.dirs.length - a.dirs.length || a.name.localeCompare(b.name)
             return a.name.localeCompare(b.name)
         })
     }
     onResultsChanged: { if (!results.some(a => a.id === selectedId)) selectedId = results.length ? results[0].id : "" }
     function focusSearch() { search.forceActiveFocus() }
+    // Missing requirements first, then updates, then out-of-date addons.
+    function attention(a) {
+        return (a.missing.length || a.requiresDisabled.length ? 4 : 0) + (app.checks[a.id]?.state === "available" ? 2 : 0) + (a.outOfDate ? 1 : 0)
+    }
     function badges(addon) {
         let list = []
+        if (addon.missing.length) list.push({text: "Needs " + addon.missing.join(", "), ink: UI.Theme.danger})
+        if (addon.requiresDisabled.length) list.push({text: "Needs " + addon.requiresDisabled.join(", ") + " on", ink: UI.Theme.danger})
         let check = app.checks[addon.id]
         if (check?.state === "available") list.push({text: "Update → " + check.latest, ink: UI.Theme.accent})
         if (check?.state === "error") list.push({text: "Check failed", ink: UI.Theme.danger})
@@ -60,8 +67,8 @@ Item {
             Layout.fillWidth: true
             spacing: 10
             UI.SearchField { id: search; objectName: "installedSearch"; Layout.fillWidth: true; Layout.minimumWidth: 160; placeholderText: "Search installed addons, notes, or folders…" }
-            UI.Filter { id: statusFilter; objectName: "statusFilter"; Layout.fillWidth: true; Layout.preferredWidth: 170; Layout.minimumWidth: 120; model: ["Any status", "Enabled", "Disabled", "Update available", "Out of date"] }
-            UI.Filter { id: sourceFilter; objectName: "sourceFilter"; Layout.fillWidth: true; Layout.preferredWidth: 160; Layout.minimumWidth: 120; model: ["All sources", "CurseForge", "WoWInterface", "Tukui", "GitHub", "Manual installs", "Zip files"] }
+            UI.Filter { id: statusFilter; objectName: "statusFilter"; Layout.fillWidth: true; Layout.preferredWidth: 170; Layout.minimumWidth: 120; model: ["Any status", "Enabled", "Disabled", "Update available", "Out of date", "Missing requirements"] }
+            UI.Filter { id: sourceFilter; objectName: "sourceFilter"; Layout.fillWidth: true; Layout.preferredWidth: 160; Layout.minimumWidth: 120; model: ["All sources", "CurseForge", "WoWInterface", "Manual installs", "Zip files"] }
             UI.Filter { id: sortFilter; objectName: "installedSort"; Layout.fillWidth: true; Layout.preferredWidth: 180; Layout.minimumWidth: 120; model: ["Name A–Z", "Name Z–A", "Recently installed", "Needs attention", "Most folders"] }
         }
         RowLayout {
@@ -103,7 +110,9 @@ Item {
                             UI.Label { anchors.centerIn: parent; text: row.modelData.name.slice(0, 1).toUpperCase(); font.pixelSize: 19; font.weight: Font.Medium; color: row.modelData.managed ? UI.Theme.accent : UI.Theme.foreground }
                         }
                         ColumnLayout {
+                            // Fill what's left beside the toggle instead of growing with long badges.
                             Layout.fillWidth: true
+                            Layout.preferredWidth: 0
                             spacing: 4
                             UI.Label { Layout.fillWidth: true; text: row.modelData.name; elide: Text.ElideRight; font.weight: Font.DemiBold }
                             UI.Label {
@@ -112,6 +121,8 @@ Item {
                                 color: UI.Theme.muted; font.pixelSize: 10; elide: Text.ElideRight
                             }
                             RowLayout {
+                                Layout.fillWidth: true
+                                clip: true
                                 spacing: 6
                                 UI.Label { visible: !root.badges(row.modelData).length; Layout.fillWidth: true; text: row.modelData.notes; color: UI.Theme.muted; font.pixelSize: 11; elide: Text.ElideRight }
                                 Repeater {
@@ -201,6 +212,26 @@ Item {
                             text: "This addon doesn't list your game's interface version. The game loads it only with “Load out of date AddOns” checked, and it may not work."
                             color: UI.Theme.warning; font.pixelSize: 11; wrapMode: Text.WordWrap
                         }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            visible: !!detail.addon && (detail.addon.missing.length > 0 || detail.addon.requiresDisabled.length > 0)
+                            spacing: 8
+                            UI.Label { text: "REQUIREMENTS"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
+                            UI.Label {
+                                Layout.fillWidth: true
+                                text: detail.addon ? [detail.addon.missing.length ? "Needs " + detail.addon.missing.join(", ") + ", which isn't installed." : "",
+                                                      detail.addon.requiresDisabled.length ? "Needs " + detail.addon.requiresDisabled.join(", ") + ", which is turned off." : ""].filter(x => x).join(" ")
+                                    + " It won't load in game until then." : ""
+                                color: UI.Theme.danger; font.pixelSize: 12; wrapMode: Text.WordWrap
+                            }
+                            UI.ActionButton {
+                                objectName: "requirementsButton"
+                                text: "Install what it needs"
+                                primary: true
+                                enabled: !root.app.busy
+                                onClicked: root.app.execute({action: "requirements", id: detail.addon.id})
+                            }
+                        }
                         UI.Label { text: "FOLDERS"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
                         Repeater {
                             model: detail.addon?.dirs || []
@@ -223,8 +254,8 @@ Item {
                         UI.Label {
                             Layout.fillWidth: true
                             text: !detail.addon ? ""
-                                : detail.addon.source === "file" || detail.addon.source === "url" ? "Installed from a .zip, so it isn't checked. Install a newer .zip to update it."
-                                : !detail.addon.links.length ? "Its files don't say where it's published, so it isn't checked. Reinstall it from Browse, or with Add addon from its GitHub or CurseForge page, to get updates."
+                                : detail.addon.source === "file" ? "Installed from a .zip, so it isn't checked. Install a newer .zip to update it."
+                                : !detail.addon.links.length ? "Its files don't say where it's published on CurseForge or WoWInterface, so it isn't checked. Reinstall it from Browse to get updates."
                                 : detail.check?.state === "available" ? "Version " + detail.check.latest + " is available from " + root.app.sourceName(detail.check.source) + "."
                                 : detail.check?.state === "current" ? "Up to date with " + root.app.sourceName(detail.check.source) + " (" + detail.check.latest + ")."
                                 : detail.check?.state === "error" ? "Couldn't check. " + detail.check.message

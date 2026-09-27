@@ -84,11 +84,11 @@ ScrollView {
         UI.Label {
             Layout.fillWidth: true
             wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.45; color: UI.Theme.muted
-            text: "Browse merges CurseForge, WoWInterface, and Tukui (" + (root.app.catalogInfo.count || 0).toLocaleString(Qt.locale(), "f", 0) + " addons). "
+            text: "Addons come only from CurseForge and WoWInterface, the two big moderated addon sites (" + (root.app.catalogInfo.count || 0).toLocaleString(Qt.locale(), "f", 0) + " addons). "
                 + "CurseForge listings come from the community catalog published by the instawow project and from CFWidget; files download from CurseForge's own servers. "
-                + "Wago Addons isn't included: its data needs a paid key and its site disallows automated downloads. "
-                + "Add addon installs GitHub releases, CurseForge pages, or any .zip. No accounts, keys, or tracking.\n"
-                + "Not affiliated with Blizzard Entertainment, CurseForge, WoWInterface, Tukui, or Wago. World of Warcraft is a trademark of Blizzard Entertainment."
+                + "Nothing installs from other sites or code repositories. A .zip you downloaded yourself can be added by hand. "
+                + "Wago Addons isn't included: its data needs a paid key and its site disallows automated downloads. No accounts, keys, or tracking.\n"
+                + "Not affiliated with Blizzard Entertainment, CurseForge, WoWInterface, or Wago. World of Warcraft is a trademark of Blizzard Entertainment."
         }
     }
 }

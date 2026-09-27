@@ -28,7 +28,6 @@ TOC_SUFFIXES = {1: ("Vanilla", "Classic"), 2: ("TBC", "BCC", "Classic"), 3: ("Wr
 ALL_TOC_SUFFIXES = {"mainline", "classic", "vanilla", "tbc", "bcc", "wrath", "wotlkc", "cata", "mists", "standard"}
 CURSEFORGE_URL = re.compile(r"curseforge\.com/wow/addons/([a-z0-9][a-z0-9-]*)", re.IGNORECASE)
 WOWI_URL = re.compile(r"wowinterface\.com/downloads/(?:info|download|fileinfo\.php\?id=)(\d+)", re.IGNORECASE)
-GITHUB_URL = re.compile(r"github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?(?:[/#?]|$)", re.IGNORECASE)
 ESCAPES = re.compile(r"\|c(?:[0-9a-fA-F]{8}|n[^:|]*:)|\|r|\|T[^|]*\|t|\|A[^|]*\|a")
 
 
@@ -215,7 +214,7 @@ def pick_toc(folder, major):
 
 
 def update_links(fields):
-    """Where an addon says it's published, from packager fields or its website. Preferred source first."""
+    """Where an addon says it's published on WoWInterface or CurseForge, from packager fields or its website."""
     website = fields.get("x-website", "")
     links = []
     wowi = fields.get("x-wowi-id", "") or (WOWI_URL.search(website) or [None, ""])[1]
@@ -225,12 +224,6 @@ def update_links(fields):
     slug = CURSEFORGE_URL.search(website)
     if curse.isdigit() or slug:
         links.append({"source": "curseforge", "id": curse if curse.isdigit() else slug.group(1).lower()})
-    tukui = fields.get("x-tukui-projectid", "")
-    if re.fullmatch(r"-?\d+", tukui):
-        links.append({"source": "tukui", "id": tukui})
-    repo = GITHUB_URL.search(website)
-    if repo:
-        links.append({"source": "github", "id": repo.group(1)})
     return links
 
 

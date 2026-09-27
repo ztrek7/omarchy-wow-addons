@@ -63,8 +63,11 @@ class Toc(FakeInstall):
 
     def test_update_links(self):
         folder = make_addon(self.addons, "Boss", **{"X-Curse-Project-ID": "2382", "X-WoWI-ID": "5086", "X-Website": "https://github.com/Example/Boss.git"})
+        # A repository named in an addon's files is never used as a source.
         self.assertEqual(wowdir.read_addon(folder, self.game)["links"], [
-            {"source": "wowinterface", "id": "5086"}, {"source": "curseforge", "id": "2382"}, {"source": "github", "id": "Example/Boss"}])
+            {"source": "wowinterface", "id": "5086"}, {"source": "curseforge", "id": "2382"}])
+        repo = make_addon(self.addons, "Repo", **{"X-Website": "https://github.com/Example/Repo"})
+        self.assertEqual(wowdir.read_addon(repo, self.game)["links"], [])
         page = make_addon(self.addons, "Page", **{"X-Website": "https://www.curseforge.com/wow/addons/Page-Addon"})
         self.assertEqual(wowdir.read_addon(page, self.game)["links"], [{"source": "curseforge", "id": "page-addon"}])
         self.assertEqual(wowdir.read_addon(make_addon(self.addons, "Plain"), self.game)["links"], [])

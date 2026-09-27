@@ -1,12 +1,11 @@
-"""The Browse catalog: each site's addon list, cached separately, merged so an addon appears once.
+"""The Browse catalog: CurseForge's and WoWInterface's lists, cached separately, merged so an addon appears once.
 
-Sources, none of which need an API key:
+Neither needs an API key:
 - CurseForge: the daily community catalog published by the instawow project
   (https://github.com/layday/instawow-data), which lists active addons with
   download counts, game flavours, folders, and links to the same addon on other
   sites. Details and files come from CFWidget and CurseForge's CDN.
 - WoWInterface: its official public file list.
-- Tukui: its official API (ElvUI and Tukui).
 """
 from collections import defaultdict
 import datetime
@@ -17,12 +16,14 @@ import time
 from library import Problem
 import sources
 
-SOURCES = ("curseforge", "wowinterface", "tukui")
+SOURCES = ("curseforge", "wowinterface")
+# Bump when merge rules or entry fields change, so a cached merge is rebuilt.
+FORMAT = 2
 TTL = 6 * 3600
 INSTAWOW = "https://raw.githubusercontent.com/layday/instawow-data/data/base-catalogue-v8.compact.json"
 # instawow's source names -> ours.
-ALIASES = {"curse": "curseforge", "wowi": "wowinterface", "tukui": "tukui", "wago": "wago", "github": "github"}
-PREFERENCE = {"curseforge": 0, "wowinterface": 1, "tukui": 2, "github": 3, "wago": 4}
+ALIASES = {"curse": "curseforge", "wowi": "wowinterface", "wago": "wago", "github": "github"}
+PREFERENCE = {"curseforge": 0, "wowinterface": 1, "wago": 2}
 
 
 def cache_file(name):
@@ -69,7 +70,7 @@ def fetch_curseforge():
     items = data.get("entries") if isinstance(data, dict) else None
     if not isinstance(items, list):
         raise Problem("The CurseForge catalog has an unexpected format.")
-    entries, links, github = [], [], {}
+    entries, links = [], []
     for item in items:
         if not isinstance(item, dict):
             continue
@@ -82,24 +83,19 @@ def fetch_curseforge():
                 "flavours": item.get("game_flavours") or [], "downloads": int(item.get("download_count") or 0),
                 "updated": iso_ms(item.get("last_updated")), "dirs": folders, "sameAs": same,
             })
-        elif item.get("source") == "github" and same and item.get("slug"):
-            # The author's GitHub repository: it links the addon's listings on
-            # other sites, and is one more place to install from.
-            node = ["github", str(item.get("id"))]
-            links.append([node] + same)
-            github[node[1]] = {"id": item["slug"].lower(), "url": item.get("url") or f"https://github.com/{item['slug']}",
-                               "flavours": item.get("game_flavours") or [], "updated": iso_ms(item.get("last_updated"))}
-    return {"entries": entries, "links": links, "github": github}
+        elif len(same) >= 2:
+            # A listing elsewhere that names the same addon on two sites links
+            # those two. It's only used to match them, never shown or installed.
+            links.append(same)
+    return {"entries": entries, "links": links}
 
 
-def fetch_tukui():
-    data = sources.fetch_json(sources.TUKUI)
-    if not isinstance(data, list):
-        raise Problem("Tukui returned an unexpected format.")
-    return {"entries": [sources.compact_tukui(item) for item in data if isinstance(item, dict) and item.get("slug")]}
+FETCHERS = {"curseforge": fetch_curseforge, "wowinterface": fetch_wowinterface}
 
 
-FETCHERS = {"curseforge": fetch_curseforge, "wowinterface": fetch_wowinterface, "tukui": fetch_tukui}
+def load_entries():
+    """The merged catalog as last built."""
+    return (read(merged_file()) or {}).get("entries", [])
 
 
 def source_entries(name):
@@ -195,19 +191,15 @@ def merge(data):
         refs = [source_ref(source, entry) for source, entry in members]
         # Wago can't be used without a key, but its page is worth linking.
         refs += [{"source": "wago", "id": n[1], "url": f"https://addons.wago.io/addons/{n[1]}"} for n in nodes if n[0] == "wago"]
-        repos = data.get("curseforge", {}).get("github", {})
-        refs += [dict(repos[n[1]], source="github", downloads=0) for n in nodes if n[0] == "github" and n[1] in repos]
         refs.sort(key=lambda r: (PREFERENCE[r["source"]], -r.get("downloads", 0)))
         lead = max(members, key=lambda m: m[1].get("downloads", 0))[1]
         wowi = next((e for s, e in members if s == "wowinterface"), {})
-        tukui = next((e for s, e in members if s == "tukui"), {})
         merged.append({
             "key": f"{refs[0]['source']}:{refs[0]['id']}",
             "name": lead["name"],
-            "author": wowi.get("author") or tukui.get("author") or "",
-            "category": wowi.get("category") or "",
-            "thumb": wowi.get("thumb") or tukui.get("thumb") or "",
-            "summary": tukui.get("summary", ""),
+            "author": wowi.get("author", ""),
+            "category": wowi.get("category", ""),
+            "thumb": wowi.get("thumb", ""),
             "dirs": sorted({d for _, e in members for d in e["dirs"]}, key=str.lower),
             "sources": refs,
         })
@@ -249,8 +241,9 @@ def refresh(force=False, max_age=TTL):
         data[name] = cached or {}
         status[name] = {"count": len((cached or {}).get("entries", [])), "fetchedAt": (cached or {}).get("fetchedAt", 0), "error": error}
     merged = read(merged_file())
-    if changed or not merged:
-        merged = {"entries": merge(data)}
+    built_by = {"format": FORMAT, "sources": list(SOURCES)}
+    if changed or not merged or merged.get("builtBy") != built_by:
+        merged = {"builtBy": built_by, "entries": merge(data)}
         write(merged_file(), merged)
     if not merged["entries"]:
         raise Problem("No catalog could be loaded. " + " ".join(s["error"] for s in status.values() if s["error"]))

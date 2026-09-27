@@ -77,19 +77,19 @@ class Refresh(FakeInstall):
             return self.FILELIST
         if "categorylist" in url:
             return [{"UICATID": "1", "UICATTitle": "Map"}]
-        return [{"id": -2, "slug": "elvui", "name": "ElvUI", "url": "https://api.tukui.org/x", "directories": ["ElvUI"]}]
+        raise AssertionError(url)
 
     def test_refresh_merges_and_caches(self):
         with patch.object(sources, "fetch_json", side_effect=self.fake) as fetch:
             result = catalog.refresh()
             catalog.refresh()
-        self.assertEqual(fetch.call_count, 4)  # Cached the second time.
-        self.assertEqual(result["count"], 2)
-        self.assertEqual({k: v["count"] for k, v in result["sources"].items()}, {"curseforge": 1, "wowinterface": 1, "tukui": 1})
+        self.assertEqual(fetch.call_count, 3)  # Cached the second time.
+        self.assertEqual(result["count"], 1)
+        self.assertEqual({k: v["count"] for k, v in result["sources"].items()}, {"curseforge": 1, "wowinterface": 1})
         entries = json.loads(Path(result["path"]).read_text())["entries"]
         tomtom = next(e for e in entries if e["name"] == "TomTom")
-        self.assertEqual([r["source"] for r in tomtom["sources"]], ["curseforge", "wowinterface", "github", "wago"])
-        self.assertEqual(tomtom["sources"][2]["id"], "x/y")
+        # The GitHub listing only links the others; it's never offered as a source.
+        self.assertEqual([r["source"] for r in tomtom["sources"]], ["curseforge", "wowinterface", "wago"])
         self.assertEqual(tomtom["sources"][0]["updated"], 1788220800000)
 
     def test_unreachable_source_keeps_saved_list(self):
@@ -103,7 +103,19 @@ class Refresh(FakeInstall):
             result = catalog.refresh(force=True)
         self.assertEqual(result["sources"]["curseforge"]["error"], "offline")
         self.assertEqual(result["sources"]["curseforge"]["count"], 1)
-        self.assertEqual(result["count"], 2)
+        self.assertEqual(result["count"], 1)
+
+    def test_merge_is_rebuilt_when_rules_change(self):
+        with patch.object(sources, "fetch_json", side_effect=self.fake):
+            catalog.refresh()
+        stale = json.loads(catalog.merged_file().read_text())
+        stale["builtBy"]["format"] = 0
+        stale["entries"].append({"name": "Leftover"})
+        catalog.merged_file().write_text(json.dumps(stale))
+        with patch.object(sources, "fetch_json", side_effect=self.fake) as fetch:
+            result = catalog.refresh()
+        fetch.assert_not_called()  # Rebuilt from the saved source lists.
+        self.assertEqual(result["count"], 1)
 
     def test_nothing_loaded(self):
         with patch.object(sources, "fetch_json", side_effect=sources.Problem("offline")):

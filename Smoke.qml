@@ -42,11 +42,14 @@ App {
             app.check(app.names(installed.results) === "Old Timers", "out of date filter")
             status.currentIndex = 2
             app.check(app.names(installed.results) === "Minimal Frames", "disabled filter")
+            status.currentIndex = 5
+            app.check(app.names(installed.results) === "Old Timers", "missing requirements filter")
+            app.check(installed.badges(installed.results[0])[0].text === "Needs TimerLib", "missing requirement badge")
             status.currentIndex = 0
-            source.currentIndex = 5
+            source.currentIndex = 3
             app.check(app.names(installed.results) === "Old Timers, Trade Ledger", "manual source filter")
             source.currentIndex = 1
-            app.check(installed.results.length === 0, "CurseForge source filter")
+            app.check(app.names(installed.results) === "BagSort", "CurseForge source filter")
             source.currentIndex = 2
             app.check(app.names(installed.results) === "Minimal Frames, Quest Compass", "WoWInterface source filter")
             source.currentIndex = 0
@@ -55,7 +58,7 @@ App {
             sort.currentIndex = 2
             app.check(installed.results[0].name === "BagSort", "recently installed sort")
             sort.currentIndex = 3
-            app.check(app.names(installed.results.slice(0, 3)) === "Quest Compass, Trade Ledger, Old Timers", "needs attention sort")
+            app.check(app.names(installed.results.slice(0, 3)) === "Old Timers, Quest Compass, Trade Ledger", "needs attention sort puts missing requirements first")
             sort.currentIndex = 0
             search.text = "COMPASS"
             app.check(app.names(installed.results) === "Quest Compass", "case-insensitive search")
@@ -95,17 +98,18 @@ App {
             app.check(app.entryState(byName("Trade Ledger Classic Fix")) === "replace", "fork using the same folder needs confirmation")
             app.check(browse.bestRef(byName("Quest Compass")).source === "curseforge", "installs from the most recently updated site")
 
-            let curse = app.find(browse, "source-curseforge"), wowi = app.find(browse, "source-wowinterface"), tukui = app.find(browse, "source-tukui")
-            app.check(curse && wowi && tukui && curse.checked && wowi.checked && tukui.checked, "all sources on by default")
-            app.check(tukui.text.indexOf("⚠") > 0, "source errors are flagged")
+            let curse = app.find(browse, "source-curseforge"), wowi = app.find(browse, "source-wowinterface")
+            app.check(curse && wowi && curse.checked && wowi.checked, "both sources on by default")
+            app.check(!app.find(browse, "source-tukui"), "only CurseForge and WoWInterface")
+            app.check(wowi.text.indexOf("⚠") > 0 && curse.text.indexOf("⚠") < 0, "source errors are flagged")
+            app.check(!app.catalog.some(e => e.sources.some(r => r.source === "github" || r.source === "tukui")), "no other sources in the catalog")
             let total = browse.results.length
             app.setSource("curseforge", false)
             app.check(!entries(browse.results).some(e => e.name === "Forge Timers") && entries(browse.results).some(e => e.name === "Quest Compass"), "turning CurseForge off keeps merged entries")
             app.check(browse.bestRef(byName("Quest Compass")).source === "wowinterface", "install falls back to an enabled site")
             app.setSource("wowinterface", false)
-            app.setSource("tukui", false)
             app.check(browse.results.length === 0, "all sources off")
-            app.setSource("curseforge", true); app.setSource("wowinterface", true); app.setSource("tukui", true)
+            app.setSource("curseforge", true); app.setSource("wowinterface", true)
             app.check(browse.results.length === total, "sources back on")
 
             hide.checked = true
