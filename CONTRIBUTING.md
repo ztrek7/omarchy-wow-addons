@@ -27,6 +27,6 @@ python3 -m unittest discover -s tests                  # Python tests
 WOW_ADDONS_DEMO=1 quickshell -n -p "$PWD/Smoke.qml"    # UI test with example data
 ```
 
-`WOW_ADDONS_DEMO=1 ./run` opens the app with example data and changes turned off, which is handy for screenshots.
+`WOW_ADDONS_DEMO=1 ./run` opens the app with made-up example data and changes turned off, which is handy for trying the interface without touching your game. Screenshots for the README should come from the real app.
 
 `backend.py` is what the window calls for anything that touches files or the network. `wowdir.py` finds game installs and reads `.toc` files, `library.py` changes the AddOns folder, `sources.py` talks to CurseForge and WoWInterface, and `catalog.py` builds the Browse list.

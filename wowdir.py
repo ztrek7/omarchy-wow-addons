@@ -22,13 +22,24 @@ CANDIDATE_GLOBS = (
 FLAVOR_DIR = re.compile(r"^_[a-z0-9]+(?:_[a-z0-9]+)*_$")
 DISABLED_DIR = "AddOns.disabled"
 
-# Flavor-specific TOC suffixes the client prefers over the plain .toc, by game major version.
-TOC_SUFFIXES = {1: ("Vanilla", "Classic"), 2: ("TBC", "BCC", "Classic"), 3: ("Wrath", "WOTLKC", "Classic"),
-                4: ("Cata", "Classic"), 5: ("Mists", "Classic")}
-ALL_TOC_SUFFIXES = {"mainline", "classic", "vanilla", "tbc", "bcc", "wrath", "wotlkc", "cata", "mists", "standard"}
+# The TOC files each game looks for before the plain Name.toc, in order
+# (https://warcraft.wiki.gg/wiki/TOC_format). WoW Forever's code name is Camelot.
+TOC_SUFFIXES = {
+    "mainline": ("Standard", "Mainline"), "vanilla_classic": ("Vanilla", "Classic"), "forever_classic": ("Camelot", "Forever"),
+    "tbc_classic": ("TBC", "BCC", "Classic"), "wrath_classic": ("Wrath", "WOTLKC", "Classic"), "titan_classic": ("Titan", "Wrath", "Classic"),
+    "cata_classic": ("Cata", "Classic"), "mists_classic": ("Mists", "Classic"),
+}
+ALL_TOC_SUFFIXES = {suffix.lower() for suffixes in TOC_SUFFIXES.values() for suffix in suffixes} | {"plunderstorm", "wowlabs", "wowhack"}
+# The names each game answers to in ## AllowLoadGameType.
+GAME_TYPES = {
+    "mainline": {"mainline", "standard"}, "vanilla_classic": {"vanilla", "classic"}, "forever_classic": {"camelot"},
+    "tbc_classic": {"tbc", "classic"}, "wrath_classic": {"wrath", "classic"}, "titan_classic": {"titan", "wrath", "classic"},
+    "cata_classic": {"cata", "classic"}, "mists_classic": {"mists", "classic"},
+}
 CURSEFORGE_URL = re.compile(r"curseforge\.com/wow/addons/([a-z0-9][a-z0-9-]*)", re.IGNORECASE)
 WOWI_URL = re.compile(r"wowinterface\.com/downloads/(?:info|download|fileinfo\.php\?id=)(\d+)", re.IGNORECASE)
 ESCAPES = re.compile(r"\|c(?:[0-9a-fA-F]{8}|n[^:|]*:)|\|r|\|T[^|]*\|t|\|A[^|]*\|a")
+LINE_BREAK = re.compile(r"\s*\|n\s*")
 
 
 def load_config():
@@ -177,7 +188,8 @@ def resolve(config=None, home=None):
 
 
 def clean(text):
-    return ESCAPES.sub("", text or "").strip()
+    """Strip WoW's color, texture, and line-break codes from TOC text."""
+    return LINE_BREAK.sub(" ", ESCAPES.sub("", text or "")).strip()
 
 
 def parse_toc(path):
@@ -207,8 +219,8 @@ def toc_suffix(folder, toc):
     return False
 
 
-def pick_toc(folder, major):
-    """Return the TOC the client would load for this game version, plus whether any TOC exists."""
+def pick_toc(folder, flavour):
+    """The TOC this game would load, and whether it loads the folder at all."""
     tocs = {}
     for toc in Path(folder).glob("*.toc"):
         suffix = toc_suffix(Path(folder).name, toc)
@@ -216,7 +228,7 @@ def pick_toc(folder, major):
             tocs[(suffix or "").lower()] = toc
     if not tocs:
         return None, False
-    preferred = TOC_SUFFIXES.get(major, ("Mainline",)) if major else ()
+    preferred = TOC_SUFFIXES.get(flavour, ())
     for suffix in preferred:
         if suffix.lower() in tocs:
             return tocs[suffix.lower()], True
@@ -246,8 +258,14 @@ def split_list(value):
 
 def read_addon(folder, game):
     folder = Path(folder)
-    toc, loadable = pick_toc(folder, game.get("major") if game else None)
+    flavour = game.get("flavour") if game else None
+    toc, loadable = pick_toc(folder, flavour)
     fields = parse_toc(toc) if toc else {}
+    # "## AllowLoadGameType: standard" marks a part that only loads in those games, like
+    # BigWigs' Retail raid modules. The game skips it here on purpose; it isn't out of date.
+    allowed = {t.lower() for t in split_list(fields.get("allowloadgametype"))}
+    if allowed and flavour in GAME_TYPES and not allowed & GAME_TYPES[flavour]:
+        loadable = False
     interfaces = []
     for item in split_list(fields.get("interface")):
         if item.isdigit():

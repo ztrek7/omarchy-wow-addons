@@ -2,7 +2,7 @@
 
 An addon manager for World of Warcraft on [Omarchy](https://omarchy.org). Browse addons from CurseForge and WoWInterface, install them in one click, and keep them up to date. You don't need the CurseForge app or an account.
 
-![The Installed page, showing addons, their status, and a details panel](assets/preview.png)
+![Browsing addons for WoW Forever, with icons, download counts, and which sites carry each one](assets/browse.png)
 
 ## Install
 
@@ -19,6 +19,8 @@ Open **WoW Addons** from the app launcher (Super + Space).
 To remove the app later, run `python3 scripts/install.py --uninstall`. Your addons stay where they are.
 
 ## How it works
+
+![Installed addons with their versions and status, and details for Questie](assets/installed.png)
 
 **Finding your game.** The app looks for World of Warcraft in Wine and Proton prefixes, such as the Battle.net install that comes with Omarchy. It lists every version it finds, like WoW Retail, WoW Classic, WoW Classic Era, WoW Forever, and their PTRs and betas. Switch between them from the menu in Browse or in Settings. If your game is somewhere unusual, point the app at the folder in Settings.
 

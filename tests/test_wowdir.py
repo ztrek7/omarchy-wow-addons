@@ -62,6 +62,29 @@ class Toc(FakeInstall):
         self.assertEqual(info["title"], "Split Classic")
         self.assertFalse(info["outOfDate"])
 
+    def forever(self):
+        return dict(self.game, version="1.60.1", interface=16001, major=1, flavour="forever_classic")
+
+    def test_wow_forever_reads_camelot_tocs(self):
+        folder = make_addon(self.addons, "Questie", interface="00000")
+        (folder / "Questie_Vanilla.toc").write_text("## Interface: 11508, 11509\n")
+        (folder / "Questie_Camelot.toc").write_text("## Interface: 16001\n")
+        info = wowdir.read_addon(folder, self.forever())
+        self.assertEqual((info["interfaces"], info["outOfDate"], info["loadable"]), ([16001], False, True))
+        # Classic Era still reads its own file.
+        self.assertEqual(wowdir.read_addon(folder, self.game)["interfaces"], [11508, 11509])
+
+    def test_parts_for_other_games_are_not_out_of_date(self):
+        folder = make_addon(self.addons, "BigWigs_Midnight", interface="120100", AllowLoadGameType="standard")
+        info = wowdir.read_addon(folder, self.forever())
+        self.assertEqual((info["loadable"], info["outOfDate"]), (False, False))
+        both = make_addon(self.addons, "Both", interface="16001", AllowLoadGameType="standard, camelot")
+        self.assertTrue(wowdir.read_addon(both, self.forever())["loadable"])
+
+    def test_line_breaks_in_notes(self):
+        folder = make_addon(self.addons, "Bags", Notes="See your items at any time.|nBy João and Jason")
+        self.assertEqual(wowdir.read_addon(folder, self.game)["notes"], "See your items at any time. By João and Jason")
+
     def test_other_flavor_only_is_not_loadable(self):
         folder = self.addons / "RetailOnly"
         folder.mkdir()
