@@ -1,0 +1,469 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
+import "ui" as UI
+
+Scope {
+    id: app
+    property alias windowItem: surface
+    property alias installedView: installedView
+    property alias browseView: browseView
+    property bool demo: Quickshell.env("WOW_ADDONS_DEMO") === "1"
+
+    // Installed state, from backend.py list.
+    property var setup: ({roots: [], flavors: [], flavor: null})
+    readonly property var game: setup.flavor || null
+    property var addons: []
+    property var checks: ({})
+    property bool gameRunning: false
+    property var downloads: []
+    property string lastChecked: ""
+
+    // WoWInterface catalog, loaded from the backend's cache file.
+    property var catalog: []
+    property var catalogInfo: ({})
+    property string catalogMessage: ""
+    property var details: ({})
+    property string detailsId: ""
+    property string detailsError: ""
+
+    property string page: "installed"
+    property var events: []
+    property string status: "Looking for World of Warcraft…"
+    property bool failed: false
+    property var request: ({})
+    property string output: ""
+    property string errors: ""
+    property string dialogAction: ""
+    property var dialogTarget: ({})
+    readonly property bool busy: worker.running
+
+    readonly property var updateIds: addons.filter(a => checks[a.id]?.state === "available").map(a => a.id)
+    readonly property int enabledCount: addons.filter(a => a.state !== "disabled").length
+    readonly property int outOfDateCount: addons.filter(a => a.outOfDate).length
+    // Folder name -> addon id, so the catalog can tell what's already on disk.
+    readonly property var folderOwners: {
+        let owners = {}
+        addons.forEach(a => a.dirs.forEach(d => owners[d.name] = a.id))
+        return owners
+    }
+
+    function helper() { return decodeURIComponent(Qt.resolvedUrl("backend.py").toString().replace(/^file:\/\//, "")) }
+    function gameLabel() { return game ? game.name + (game.version ? " " + game.version : "") : "No game found" }
+    function compact(n) {
+        if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M"
+        if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + "K"
+        return String(n)
+    }
+    function versionText(v) { return !v ? "" : /^\d/.test(v) ? "v" + v : v }
+    function monthYear(ms) { return ms ? new Date(ms).toLocaleDateString(Qt.locale(), "MMM yyyy") : "unknown" }
+    function sourceName(source) {
+        return ({wowinterface: "WoWInterface", github: "GitHub", url: "Zip link", file: "Zip file", manual: "Manual install"})[source] || source
+    }
+
+    function log(message, error) {
+        status = message
+        failed = !!error
+        events = [{time: new Date().toLocaleTimeString(), message: message, error: !!error}].concat(events).slice(0, 100)
+    }
+    function execute(data) {
+        if (busy) return
+        if (demo) { log("Preview mode: changes are disabled.", false); return }
+        request = data
+        output = ""
+        errors = ""
+        // A refresh after a change keeps that change's message in the status line.
+        if (!followUp) {
+            failed = false
+            status = ({list: "Reading your AddOns folder…", check: "Checking WoWInterface and GitHub for updates…", install: "Downloading and installing…",
+                       update: "Installing updates…", remove: "Moving to the trash…", enable: "Enabling…", disable: "Disabling…", configure: "Saving settings…"})[data.action] || "Working…"
+        }
+        worker.command = ["python3", helper(), JSON.stringify(data)]
+        worker.running = true
+    }
+    function refresh() { execute({action: "list"}) }
+    function toggle(addon) { execute({action: addon.state === "enabled" ? "disable" : "enable", id: addon.id}) }
+    function installEntry(entry) {
+        let clashes = entry.dirs.filter(d => folderOwners[d] && folderOwners[d] !== "wowi:" + entry.id)
+        if (clashes.length) confirm("replace", Object.assign({clashes: clashes}, entry))
+        else execute({action: "install", source: "wowinterface", id: entry.id})
+    }
+    function entryState(entry) {
+        let id = "wowi:" + entry.id
+        if (addons.some(a => a.id === id)) return checks[id]?.state === "available" ? "update" : "installed"
+        return entry.dirs.some(d => folderOwners[d]) ? "replace" : "install"
+    }
+    function loadCatalog(force) {
+        if (demo || catalogWorker.running) return
+        catalogMessage = force ? "Downloading the WoWInterface catalog…" : "Loading the WoWInterface catalog…"
+        catalogWorker.output = ""
+        catalogWorker.command = ["python3", helper(), JSON.stringify({action: "catalog", force: !!force})]
+        catalogWorker.running = true
+    }
+    function loadDetails(id) {
+        detailsId = id
+        detailsError = ""
+        if (demo || details[id] || detailsWorker.running) return
+        detailsWorker.output = ""
+        detailsWorker.command = ["python3", helper(), JSON.stringify({action: "details", id: id})]
+        detailsWorker.running = true
+    }
+    function confirm(action, target) {
+        dialogAction = action
+        dialogTarget = target || {}
+        addLocation.text = ""
+        dialog.open()
+        if (action === "add") addLocation.forceActiveFocus()
+    }
+
+    function finish(code) {
+        let data
+        try { data = JSON.parse(output) }
+        catch (e) { log(errors.trim() || "The helper did not return a valid response (exit " + code + ").", true); return }
+        if (!data.ok) { log(data.error || "The operation failed.", true); return }
+        let action = request.action
+        if (action === "list") {
+            setup = data.setup
+            addons = data.addons
+            gameRunning = data.gameRunning
+            downloads = data.downloads || []
+            let kept = {}
+            addons.forEach(a => { if (checks[a.id]) kept[a.id] = checks[a.id] })
+            checks = kept
+            if (!game) log("No World of Warcraft install found. Choose its folder in Settings.", true)
+            else if (!followUp) status = addons.length + " addons in " + gameLabel() + " · " + enabledCount + " enabled"
+            followUp = false
+            return
+        }
+        if (action === "check") {
+            checks = data.checks
+            lastChecked = new Date().toLocaleTimeString()
+            let failures = Object.keys(data.checks).filter(k => data.checks[k].state === "error")
+            failures.forEach(k => log((addons.find(a => a.id === k)?.name || k) + ": " + data.checks[k].message, true))
+            let managed = Object.keys(data.checks).length
+            log(managed ? "Checked " + managed + " addons · " + updateIds.length + " updates available" + (failures.length ? " · " + failures.length + " errors" : "")
+                        : "Nothing to check. Only addons installed from WoWInterface or GitHub can be updated here.", failures.length > 0)
+            return
+        }
+        if (data.results) {
+            data.results.forEach(r => log(r.message, !r.ok))
+            let failures = data.results.filter(r => !r.ok).length
+            log((data.results.length - failures) + " updated · " + failures + " failed" + (gameRunning ? " · /reload in game to apply" : ""), failures > 0)
+            let next = Object.assign({}, checks)
+            data.results.forEach(r => { if (r.ok) delete next[r.id] })
+            checks = next
+        } else {
+            if (action === "install" && request.source === "wowinterface") {
+                let next = Object.assign({}, checks)
+                delete next["wowi:" + request.id]
+                checks = next
+            }
+            log(data.message + (gameRunning && action !== "configure" ? " Restart the game or /reload to apply." : ""), false)
+        }
+        // Show the folder as it is now, keeping the message above in the status line.
+        followUp = true
+        Qt.callLater(refresh)
+    }
+    property bool followUp: false
+
+    Component.onCompleted: {
+        Quickshell.watchFiles = false
+        if (demo) demoFile.path = Qt.resolvedUrl("tests/demo.json")
+        else {
+            refresh()
+            loadCatalog(false)
+        }
+    }
+    FileView {
+        id: demoFile
+        onLoaded: {
+            let data = JSON.parse(text())
+            app.setup = data.setup
+            app.addons = data.addons
+            app.checks = data.checks
+            app.catalog = data.catalog
+            app.details = data.details
+            app.catalogInfo = {count: data.catalog.length, fetchedAt: Date.now() / 1000}
+            app.downloads = data.downloads
+            app.status = "Preview mode · example data · changes disabled"
+        }
+    }
+    FileView {
+        id: catalogFile
+        onLoaded: {
+            try {
+                app.catalog = JSON.parse(text()).entries
+                app.catalogMessage = app.catalogInfo.message || ""
+            } catch (e) {
+                app.catalogMessage = "The saved catalog could not be read. Use Refresh catalog."
+            }
+        }
+        onLoadFailed: app.catalogMessage = "The saved catalog could not be opened. Use Refresh catalog."
+    }
+    Process {
+        id: worker
+        stdout: SplitParser { onRead: data => app.output += data + "\n" }
+        stderr: SplitParser { onRead: data => app.errors += data + "\n" }
+        onExited: exitCode => app.finish(exitCode)
+    }
+    Process {
+        id: catalogWorker
+        property string output: ""
+        stdout: SplitParser { onRead: data => catalogWorker.output += data + "\n" }
+        onExited: {
+            let data
+            try { data = JSON.parse(output) } catch (e) { data = {ok: false, error: "The catalog helper failed."} }
+            if (!data.ok) { app.catalogMessage = data.error; return }
+            app.catalogInfo = data
+            if (catalogFile.path === data.path) catalogFile.reload()
+            else catalogFile.path = data.path
+        }
+    }
+    Process {
+        id: detailsWorker
+        property string output: ""
+        stdout: SplitParser { onRead: data => detailsWorker.output += data + "\n" }
+        onExited: {
+            let data
+            try { data = JSON.parse(output) } catch (e) { data = {ok: false, error: "The details helper failed."} }
+            if (!data.ok) { app.detailsError = data.error; return }
+            let next = Object.assign({}, app.details)
+            next[data.details.id] = data.details
+            app.details = next
+            // The user may have opened another addon while this one loaded.
+            if (app.detailsId && !app.details[app.detailsId]) app.loadDetails(app.detailsId)
+        }
+    }
+
+    FloatingWindow {
+        id: window
+        title: "WoW Addons"
+        visible: true
+        implicitWidth: 1200
+        implicitHeight: 800
+        minimumSize: Qt.size(960, 640)
+        color: UI.Theme.background
+        onVisibleChanged: {
+            if (!visible) {
+                if (app.busy) { visible = true; app.status = "An operation is running. Close when it finishes." }
+                else Qt.quit()
+            }
+        }
+
+        Shortcut { sequence: "Ctrl+F"; onActivated: app.page === "browse" ? browseView.focusSearch() : installedView.focusSearch() }
+        Shortcut { sequence: "Ctrl+R"; onActivated: app.page === "browse" ? app.loadCatalog(true) : app.refresh() }
+        Shortcut { sequence: "Ctrl+N"; onActivated: app.confirm("add", null) }
+        Shortcut { sequence: "Ctrl+1"; onActivated: app.page = "installed" }
+        Shortcut { sequence: "Ctrl+2"; onActivated: app.page = "browse" }
+        Shortcut {
+            sequence: "Escape"
+            onActivated: {
+                if (browseView.detailsOpen) browseView.closeDetails()
+                else if (dialog.opened) dialog.close()
+                else if (!app.busy) Qt.quit()
+            }
+        }
+
+        Rectangle {
+            id: surface
+            anchors.fill: parent
+            color: window.color
+            RowLayout {
+                anchors.fill: parent
+                spacing: 0
+                ColumnLayout {
+                    Layout.preferredWidth: 200
+                    Layout.maximumWidth: 200
+                    Layout.fillHeight: true
+                    Layout.margins: 18
+                    spacing: 9
+                    Rectangle {
+                        Layout.topMargin: 12
+                        implicitWidth: 43; implicitHeight: 43; radius: 13
+                        color: UI.Theme.accent
+                        UI.Label { anchors.centerIn: parent; text: "󰓥"; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 24; color: UI.Theme.accentText }
+                    }
+                    UI.Label { text: "WOW\nADDONS"; font.pixelSize: 20; font.weight: Font.Bold; font.letterSpacing: 1.8; lineHeight: 1.12; Layout.topMargin: 8 }
+                    Item { Layout.preferredHeight: 24 }
+                    Repeater {
+                        model: [{key: "installed", name: "▦   Installed"}, {key: "browse", name: "◈   Browse"}, {key: "activity", name: "≡   Activity"}, {key: "settings", name: "⚙   Settings"}]
+                        delegate: AbstractButton {
+                            id: nav
+                            required property var modelData
+                            objectName: "nav-" + modelData.key
+                            Layout.fillWidth: true
+                            implicitHeight: 42
+                            onClicked: app.page = modelData.key
+                            contentItem: UI.Label { text: nav.modelData.name; leftPadding: 12; verticalAlignment: Text.AlignVCenter; font.pixelSize: 13; color: app.page === nav.modelData.key ? UI.Theme.accent : UI.Theme.muted }
+                            background: Rectangle { radius: 8; color: app.page === nav.modelData.key ? UI.Theme.selected : nav.hovered ? UI.Theme.hover : "transparent"; border.color: nav.activeFocus ? UI.Theme.accent : "transparent" }
+                        }
+                    }
+                    Item { Layout.fillHeight: true }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: gameCard.implicitHeight + 24
+                        radius: 10
+                        color: UI.Theme.surface
+                        border.color: UI.Theme.border
+                        ColumnLayout {
+                            id: gameCard
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 3
+                            UI.Label { text: "GAME"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
+                            UI.Label { Layout.fillWidth: true; text: app.game ? app.game.name : "Not found"; font.weight: Font.DemiBold; font.pixelSize: 13; elide: Text.ElideRight }
+                            UI.Label { Layout.fillWidth: true; visible: !!app.game; text: app.game ? (app.game.version || "Unknown version") + (app.game.interface ? " · " + app.game.interface : "") : ""; color: UI.Theme.muted; font.pixelSize: 11 }
+                            UI.Label { Layout.fillWidth: true; visible: app.gameRunning; text: "● Running"; color: UI.Theme.accent; font.pixelSize: 11 }
+                        }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: app.page = "settings" }
+                    }
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.margins: 28
+                    spacing: 16
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        UI.Label { text: ({installed: "Installed", browse: "Browse", activity: "Activity", settings: "Settings"})[app.page]; font.pixelSize: 28; font.weight: Font.DemiBold }
+                        Item { Layout.fillWidth: true }
+                        UI.ActionButton { visible: app.page === "installed"; text: "↻  Check updates"; enabled: !app.busy && !!app.game; onClicked: app.execute({action: "check"}) }
+                        UI.ActionButton {
+                            objectName: "updateAll"
+                            visible: app.page === "installed" && app.updateIds.length > 0
+                            text: "Update all (" + app.updateIds.length + ")"
+                            enabled: !app.busy
+                            onClicked: app.confirm("updateAll", null)
+                        }
+                        UI.ActionButton { visible: app.page === "browse"; text: catalogWorker.running ? "Loading…" : "↻  Refresh catalog"; enabled: !catalogWorker.running && !app.demo; onClicked: app.loadCatalog(true) }
+                        UI.ActionButton { objectName: "addButton"; text: "+  Add addon"; primary: true; enabled: !app.busy && !!app.game; onClicked: app.confirm("add", null) }
+                    }
+                    Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: UI.Theme.border }
+                    StackLayout {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        currentIndex: ["installed", "browse", "activity", "settings"].indexOf(app.page)
+                        InstalledView { id: installedView; app: app }
+                        BrowseView { id: browseView; app: app; catalogLoading: catalogWorker.running; detailsLoading: detailsWorker.running }
+                        ListView {
+                            clip: true
+                            spacing: 10
+                            model: app.events
+                            ScrollBar.vertical: UI.ScrollBar {}
+                            delegate: Rectangle {
+                                id: eventRow
+                                required property var modelData
+                                width: ListView.view.width - 12
+                                height: eventColumn.implicitHeight + 26
+                                radius: 10
+                                color: UI.Theme.surface
+                                ColumnLayout {
+                                    id: eventColumn
+                                    anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: 13
+                                    UI.Label { text: eventRow.modelData.time; color: UI.Theme.muted; font.pixelSize: 10 }
+                                    UI.Label { Layout.fillWidth: true; text: eventRow.modelData.message; color: eventRow.modelData.error ? UI.Theme.danger : UI.Theme.foreground; wrapMode: Text.Wrap; font.pixelSize: 12 }
+                                }
+                            }
+                            UI.Label { anchors.centerIn: parent; visible: app.events.length === 0; text: "Installs, updates, and changes will appear here."; color: UI.Theme.muted }
+                        }
+                        SettingsView { app: app }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Rectangle { implicitWidth: 6; implicitHeight: 6; radius: 3; color: app.failed ? UI.Theme.danger : app.busy ? UI.Theme.warning : UI.Theme.accent }
+                        UI.Label {
+                            Layout.fillWidth: true
+                            text: app.status.replace(/\n/g, " · ")
+                            elide: Text.ElideRight; font.pixelSize: 11
+                            color: app.failed ? UI.Theme.danger : UI.Theme.muted
+                            UI.Tooltip { visible: statusHover.hovered && parent.truncated; text: app.status }
+                            HoverHandler { id: statusHover }
+                        }
+                        UI.Pill { visible: app.gameRunning; text: "Game running · /reload after changes"; ink: UI.Theme.warning }
+                        UI.ActionButton { text: "Refresh"; enabled: !app.busy; implicitHeight: 30; onClicked: app.refresh() }
+                    }
+                }
+            }
+        }
+
+        Popup {
+            id: dialog
+            objectName: "dialog"
+            anchors.centerIn: parent
+            width: 540
+            padding: 26
+            modal: true
+            focus: true
+            closePolicy: Popup.CloseOnEscape
+            background: Rectangle { radius: 16; color: UI.Theme.surface; border.color: UI.Theme.accent }
+            Overlay.modal: Rectangle { color: UI.Theme.scrim }
+            contentItem: ColumnLayout {
+                spacing: 16
+                UI.Label {
+                    Layout.fillWidth: true
+                    text: app.dialogAction === "add" ? "Add an addon"
+                        : app.dialogAction === "remove" ? "Remove " + app.dialogTarget.name + "?"
+                        : app.dialogAction === "replace" ? "Replace existing folders?"
+                        : "Install " + app.updateIds.length + " update" + (app.updateIds.length === 1 ? "?" : "s?")
+                    font.pixelSize: 24; font.weight: Font.DemiBold; wrapMode: Text.WordWrap
+                }
+                UI.Label {
+                    Layout.fillWidth: true
+                    text: app.dialogAction === "add" ? "Paste a GitHub repository, a link to a .zip, or the path of a .zip you downloaded. Packaged releases are picked for " + app.gameLabel() + "."
+                        : app.dialogAction === "remove" ? "Its " + (app.dialogTarget.dirs?.length || 0) + " folder" + (app.dialogTarget.dirs?.length === 1 ? "" : "s") + " move to the trash, so you can restore them. Settings the addon saved in WTF are kept."
+                        : app.dialogAction === "replace" ? (app.dialogTarget.name || "This addon") + " installs folders you already have: " + (app.dialogTarget.clashes || []).join(", ") + ". The current copies move to the trash."
+                        : app.updateIds.map(id => "  •  " + (app.addons.find(a => a.id === id)?.name || id) + "  →  " + (app.checks[id]?.latest || "")).join("\n")
+                    font.pixelSize: 13; color: UI.Theme.muted; wrapMode: Text.Wrap; lineHeight: 1.4
+                }
+                UI.SearchField {
+                    id: addLocation
+                    objectName: "addLocation"
+                    visible: app.dialogAction === "add"
+                    Layout.fillWidth: true
+                    implicitHeight: 43
+                    placeholderText: "owner/repo  ·  https://…/addon.zip  ·  ~/Downloads/addon.zip"
+                    onAccepted: { if (confirmButton.enabled) confirmButton.clicked() }
+                }
+                ColumnLayout {
+                    visible: app.dialogAction === "add" && app.downloads.length > 0
+                    Layout.fillWidth: true
+                    spacing: 6
+                    UI.Label { text: "RECENT DOWNLOADS"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
+                    Repeater {
+                        model: app.downloads
+                        delegate: UI.ActionButton {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            implicitHeight: 32
+                            text: modelData.name
+                            onClicked: addLocation.text = modelData.path
+                        }
+                    }
+                }
+                UI.Label { visible: app.demo; text: "Preview only. Actions are disabled."; color: UI.Theme.warning; font.pixelSize: 12 }
+                RowLayout {
+                    Item { Layout.fillWidth: true }
+                    UI.ActionButton { text: "Cancel"; onClicked: dialog.close() }
+                    UI.ActionButton {
+                        id: confirmButton
+                        text: ({add: "Install", remove: "Move to trash", replace: "Replace and install", updateAll: "Update all"})[app.dialogAction] || "OK"
+                        primary: app.dialogAction !== "remove"
+                        danger: app.dialogAction === "remove"
+                        enabled: !app.busy && (app.dialogAction !== "add" || addLocation.text.trim().length > 0)
+                        onClicked: {
+                            let action = app.dialogAction
+                            dialog.close()
+                            if (action === "add") app.execute({action: "install", location: addLocation.text.trim()})
+                            else if (action === "remove") app.execute({action: "remove", id: app.dialogTarget.id})
+                            else if (action === "replace") app.execute({action: "install", source: "wowinterface", id: app.dialogTarget.id})
+                            else app.execute({action: "update", ids: app.updateIds.slice()})
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
