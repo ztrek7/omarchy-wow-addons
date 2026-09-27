@@ -95,6 +95,21 @@ def interface_number(version):
     return major * 10000 + minor * 100 + patch
 
 
+def game_flavour(version, key=""):
+    """The catalog name for a client line: 1.60.1 -> forever_classic, 1.15.7 -> vanilla_classic."""
+    parts = [int(p) if p.isdigit() else 0 for p in (version or "").split(".")[:2]] + [0, 0]
+    major, minor = parts[0], parts[1]
+    if not major:
+        return {"_retail_": "mainline", "_classic_era_": "vanilla_classic"}.get(key)
+    if major >= 6:
+        return "mainline"
+    if major == 1:
+        return "forever_classic" if minor >= 60 else "vanilla_classic"
+    if major == 3:
+        return "titan_classic" if minor >= 80 else "wrath_classic"
+    return {2: "tbc_classic", 4: "cata_classic", 5: "mists_classic"}[major]
+
+
 def flavor_name(key):
     return " ".join(word.upper() if word in ("ptr", "xptr") else word.capitalize() for word in key.strip("_").split("_"))
 
@@ -121,6 +136,7 @@ def flavors(root):
             "version": ".".join(version.split(".")[:3]),
             "interface": interface,
             "major": interface // 10000 if interface else None,
+            "flavour": game_flavour(version, child.name),
             "addons": str(child / "Interface" / "AddOns"),
         })
     return result
@@ -209,6 +225,9 @@ def update_links(fields):
     slug = CURSEFORGE_URL.search(website)
     if curse.isdigit() or slug:
         links.append({"source": "curseforge", "id": curse if curse.isdigit() else slug.group(1).lower()})
+    tukui = fields.get("x-tukui-projectid", "")
+    if re.fullmatch(r"-?\d+", tukui):
+        links.append({"source": "tukui", "id": tukui})
     repo = GITHUB_URL.search(website)
     if repo:
         links.append({"source": "github", "id": repo.group(1)})

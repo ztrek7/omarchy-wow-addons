@@ -3,6 +3,7 @@ from unittest.mock import patch
 import unittest
 
 from helpers import FakeInstall, ROOT, make_addon, make_zip, toc, library, sources, wowdir
+import catalog
 import importlib.util
 
 spec = importlib.util.spec_from_file_location("backend", ROOT / "backend.py")
@@ -43,8 +44,7 @@ class Backend(FakeInstall):
             data = self.call(action="install", source="wowinterface", id="10")
         self.assertTrue(data["ok"], data)
         self.assertEqual(self.call(action="list")["addons"][0]["id"], "wowi:10")
-        catalog = {"entries": [{"id": "10", "version": "2", "updated": 2000}]}
-        with patch.object(sources, "refresh_catalog"), patch.object(sources, "load_catalog", return_value=catalog):
+        with patch.object(catalog, "refresh"), patch.object(catalog, "source_entries", return_value=[{"id": "10", "version": "2", "updated": 2000}]):
             checks = self.call(action="check")["checks"]
         self.assertEqual(checks["wowi:10"], {"state": "available", "latest": "2", "source": "wowinterface"})
         with patch.object(sources, "wowi_details", return_value=dict(details, version="2", updated=2000)), \
@@ -119,6 +119,21 @@ class Backend(FakeInstall):
                 patch.object(sources, "fetch", return_value=data):
             self.assertTrue(self.call(action="install", location="https://www.curseforge.com/wow/addons/auctionator")["ok"])
         self.assertEqual(lookup.call_args[0][0], "auctionator")
+
+    def test_source_toggles_are_saved(self):
+        self.assertEqual(self.call(action="list")["setup"]["sources"], {"curseforge": True, "wowinterface": True, "tukui": True})
+        self.call(action="configure", sources={"curseforge": False, "wowinterface": True, "tukui": True})
+        self.assertEqual(self.call(action="list")["setup"]["sources"]["curseforge"], False)
+
+    def test_install_from_tukui(self):
+        data = make_zip({"ElvUI/ElvUI.toc": toc("ElvUI", Version="15.26"), "ElvUI_Options/ElvUI_Options.toc": toc("Options")})
+        release = {"id": "elvui", "name": "ElvUI", "version": "15.26", "author": "Elv", "url": "https://tukui.org/elvui",
+                   "download": "https://api.tukui.org/v1/download/elvui/x"}
+        with patch.object(sources, "tukui_release", return_value=release), patch.object(sources, "fetch", return_value=data):
+            self.assertTrue(self.call(action="install", source="tukui", id="elvui")["ok"])
+            addon = self.call(action="list")["addons"][0]
+            self.assertEqual((addon["id"], len(addon["dirs"])), ("tukui:elvui", 2))
+            self.assertEqual(self.call(action="check")["checks"]["tukui:elvui"]["state"], "current")
 
     def test_bad_location(self):
         data = self.call(action="install", location="nothing here")

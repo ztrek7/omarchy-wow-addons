@@ -11,6 +11,7 @@ import time
 import traceback
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import catalog  # noqa: E402
 import library  # noqa: E402
 from library import Problem  # noqa: E402
 import sources  # noqa: E402
@@ -31,6 +32,8 @@ def overview(request):
     addons = library.list_addons(game, state) if game else []
     if game:
         library.save_state(state)  # Drops records for folders deleted outside the app.
+    enabled = wowdir.load_config().get("sources", {})
+    setup["sources"] = {name: enabled.get(name, True) is not False for name in catalog.SOURCES}
     return {"setup": setup, "addons": addons, "gameRunning": wowdir.game_running(), "downloads": recent_zips()}
 
 
@@ -56,6 +59,8 @@ def configure(request):
         config.pop("root", None)
     if request.get("flavor"):
         config["flavor"] = request["flavor"]
+    if isinstance(request.get("sources"), dict):
+        config["sources"] = {name: bool(request["sources"].get(name, True)) for name in catalog.SOURCES}
     wowdir.save_config(config)
     return {"message": "Settings saved."}
 
@@ -70,12 +75,12 @@ def remove(request):
     return {"message": library.remove(game, request["id"])}
 
 
-def catalog(request):
-    return sources.refresh_catalog(force=bool(request.get("force")))
+def browse_catalog(request):
+    return catalog.refresh(force=bool(request.get("force")))
 
 
 def details(request):
-    return {"details": sources.wowi_details(request["id"])}
+    return {"details": sources.details(request.get("source", "wowinterface"), request["id"])}
 
 
 def resolve_source(request, game):
@@ -90,6 +95,11 @@ def resolve_source(request, game):
                   "version": info["version"], "updated": info["updated"], "author": info["author"],
                   "url": f"https://www.wowinterface.com/downloads/info{info['id']}"}
         return record, {"url": info["download"], "md5": info["md5"]}
+    if kind == "tukui":
+        release = sources.tukui_release(request["id"])
+        record = {"key": f"tukui:{release['id']}", "source": "tukui", "sourceId": release["id"], "name": release["name"],
+                  "version": release["version"], "author": release["author"], "url": release["url"]}
+        return record, {"url": release["download"]}
     project = request.get("id") if kind == "curseforge" else sources.curseforge_project(text)
     if project:
         release = sources.curseforge_release(project, game)
@@ -140,19 +150,22 @@ def install(request):
     return {"message": install_one(request, game, library.load_state())}
 
 
-SOURCE_NAMES = {"wowinterface": "WoWInterface", "curseforge": "CurseForge", "github": "GitHub"}
+SOURCE_NAMES = {"wowinterface": "WoWInterface", "curseforge": "CurseForge", "tukui": "Tukui", "github": "GitHub"}
 
 
-def newest(link, row, record, game, catalog):
+def newest(link, row, record, game, wowi):
     """(latest version, whether it's newer than the installed copy) from one source."""
     source, ident, installed = link["source"], link["id"], row["tocVersion"]
     if source == "wowinterface":
-        entry = catalog.get(ident)
+        entry = wowi.get(ident)
         if not entry:
             raise Problem("not listed in the WoWInterface catalog.")
         if record:
             return entry["version"], entry["updated"] > record.get("updated", 0) or entry["version"] != record.get("version")
         return entry["version"], not sources.same_version(entry["version"], installed)
+    if source == "tukui":
+        latest = sources.tukui_release(ident)["version"]
+        return latest, not sources.same_version(latest, record.get("version") if record else installed)
     if source == "curseforge":
         release = sources.curseforge_release(ident, game)
         latest, newer = release["version"], record and release["fileId"] != record.get("fileId")
@@ -173,19 +186,19 @@ def check(request):
     state = library.load_state()
     rows = [r for r in library.list_addons(game, state) if r["links"]]
     records = {r["key"]: r for r in library.packages(state, game)}
-    catalog = {}
+    wowi = {}
     if any(link["source"] == "wowinterface" for r in rows for link in r["links"]):
         try:
-            sources.refresh_catalog(force=bool(request.get("force")), max_age=3600)
+            catalog.refresh(force=bool(request.get("force")), max_age=3600)
         except Problem:
             pass  # Each affected addon reports the catalog as missing.
-        catalog = {e["id"]: e for e in (sources.load_catalog() or {}).get("entries", [])}
+        wowi = {e["id"]: e for e in catalog.source_entries("wowinterface")}
     checks = {}
     for row in rows:
         problems = []
         for link in row["links"]:
             try:
-                latest, newer = newest(link, row, records.get(row["id"]), game, catalog)
+                latest, newer = newest(link, row, records.get(row["id"]), game, wowi)
                 checks[row["id"]] = {"state": "available" if newer else "current", "latest": latest, "source": link["source"]}
                 break
             except Problem as error:
@@ -222,7 +235,7 @@ def update(request):
 
 
 ACTIONS = {"list": overview, "configure": configure, "enable": toggle, "disable": toggle, "remove": remove,
-           "catalog": catalog, "details": details, "install": install, "check": check, "update": update}
+           "catalog": browse_catalog, "details": details, "install": install, "check": check, "update": update}
 
 
 def main():

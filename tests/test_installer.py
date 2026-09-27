@@ -26,6 +26,9 @@ class Installer(unittest.TestCase):
             app = data / "wow-addons/app"
             self.assertTrue((app / "App.qml").is_file() and (app / "ui/Theme.qml").is_file())
             self.assertFalse((app / "Smoke.qml").exists())
+            # Every module the app imports and every view it loads is installed.
+            expected = {f.name for pattern in ("*.py", "*.qml") for f in ROOT.glob(pattern)} - {"Smoke.qml", "Verify.qml"}
+            self.assertEqual(expected - {f.name for f in app.iterdir()}, set())
             self.assertTrue(os.access(app / "run", os.X_OK))
             entry = (data / "applications/wow-addons.desktop").read_text()
             self.assertIn(f'Exec="{app}/run"', entry)

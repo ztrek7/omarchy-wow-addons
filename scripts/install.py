@@ -17,7 +17,7 @@ data = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
 target = data / "wow-addons" / "app"
 desktop = data / "applications" / "wow-addons.desktop"
 icon = data / "icons/hicolor/scalable/apps/wow-addons.svg"
-RUNTIME = ["App.qml", "InstalledView.qml", "BrowseView.qml", "SettingsView.qml", "backend.py", "library.py",
+RUNTIME = ["App.qml", "InstalledView.qml", "BrowseView.qml", "SettingsView.qml", "backend.py", "catalog.py", "library.py",
            "sources.py", "wowdir.py", "run", "LICENSE", "README.md"]
 
 

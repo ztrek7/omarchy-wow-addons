@@ -1,7 +1,4 @@
 import hashlib
-import json
-from pathlib import Path
-import time
 import unittest
 from unittest.mock import patch
 
@@ -18,9 +15,9 @@ FILELIST = [
 CATEGORIES = [{"UICATID": "19", "UICATTitle": "Action Bar Mods"}]
 
 
-class Catalog(FakeInstall):
-    def test_compacts_catalog(self):
-        entry = sources.compact_catalog(FILELIST, CATEGORIES)
+class Text(FakeInstall):
+    def test_compacts_wowinterface(self):
+        entry = sources.compact_wowinterface(FILELIST, CATEGORIES)
         self.assertEqual(len(entry), 1)
         entry = entry[0]
         self.assertEqual(entry["name"], "Bar & Co")
@@ -28,24 +25,9 @@ class Catalog(FakeInstall):
         self.assertEqual(entry["gameVersions"], ["12.1.0", "1.15.7"])
         self.assertEqual((entry["downloads"], entry["monthly"], entry["favorites"]), (500, 5, 7))
 
-    def test_refresh_uses_fresh_cache_and_falls_back_to_stale(self):
-        calls = []
-
-        def fake(url):
-            calls.append(url)
-            return FILELIST if "filelist" in url else CATEGORIES
-        with patch.object(sources, "fetch_json", side_effect=fake):
-            first = sources.refresh_catalog()
-            again = sources.refresh_catalog()
-        self.assertEqual(first["count"], 1)
-        self.assertEqual(len(calls), 2)
-        self.assertEqual(again["count"], 1)
-        data = json.loads(Path(first["path"]).read_text())
-        data["fetchedAt"] = time.time() - sources.CATALOG_TTL - 1
-        Path(first["path"]).write_text(json.dumps(data))
-        with patch.object(sources, "fetch_json", side_effect=sources.Problem("offline")):
-            stale = sources.refresh_catalog()
-        self.assertIn("saved catalog", stale["message"])
+    def test_html_and_markdown(self):
+        self.assertEqual(sources.html_text("<p>Hi &amp; bye</p><ul><li>One</li><li>Two</li></ul>"), "Hi & bye\n  •  One\n  •  Two")
+        self.assertEqual(sources.markdown_text("## About\n\n**Bold** [link](https://x) ![img](https://i)"), "About\n\nBold link")
 
     def test_bbcode(self):
         text = sources.bbcode_text('[SIZE="4"][B]Hi[/B][/SIZE]\r\n[LIST][*]One[*]Two[/LIST] [url="https://x"]link[/url] [img]https://i[/img] &amp;')
@@ -82,6 +64,21 @@ class GitHub(FakeInstall):
         self.assertEqual(sources.choose_asset(release, retail)["name"], "A-v1.zip")
         self.assertIsNone(sources.choose_asset(self.release("A-v1-bcc.zip"), self.game))
         self.assertIsNone(sources.choose_asset(self.release("notes.txt"), self.game))
+
+
+class Tukui(FakeInstall):
+    ITEMS = [{"id": -2, "slug": "elvui", "author": "Elv", "name": "ElvUI", "url": "https://api.tukui.org/v1/download/elvui/x",
+              "version": "15.26", "patch": ["12.1.0", "1.15.9"], "last_update": "2026-08-29", "web_url": "https://tukui.org/elvui",
+              "small_desc": "UI", "desc": "## About", "screenshot_url": "https://storage.example/1.jpg",
+              "gallery_url": "['https://storage.example/2.jpg']", "directories": ["ElvUI", "ElvUI_Options"]}]
+
+    def test_release_by_slug_or_id(self):
+        with patch.object(sources, "fetch_json", return_value=self.ITEMS):
+            self.assertEqual(sources.tukui_release("elvui")["version"], "15.26")
+            release = sources.tukui_release("-2")
+            self.assertEqual(release["images"], ["https://storage.example/1.jpg", "https://storage.example/2.jpg"])
+            with self.assertRaises(sources.Problem):
+                sources.tukui_release("nope")
 
 
 class CurseForge(FakeInstall):

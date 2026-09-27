@@ -17,8 +17,8 @@ Item {
             return (!term || text.indexOf(term) >= 0)
                 && (status === 0 || (status === 1 && a.state !== "disabled") || (status === 2 && a.state !== "enabled")
                     || (status === 3 && root.app.checks[a.id]?.state === "available") || (status === 4 && a.outOfDate))
-                && (origin === 0 || (origin === 1 && a.source === "wowinterface") || (origin === 2 && a.source === "curseforge")
-                    || (origin === 3 && a.source === "github") || (origin === 4 && !a.managed) || (origin === 5 && (a.source === "file" || a.source === "url")))
+                && (origin === 0 || a.source === ["", "curseforge", "wowinterface", "tukui", "github"][origin]
+                    || (origin === 5 && !a.managed) || (origin === 6 && (a.source === "file" || a.source === "url")))
         })
         let sort = sortFilter.currentIndex
         return found.sort((a, b) => {
@@ -61,7 +61,7 @@ Item {
             spacing: 10
             UI.SearchField { id: search; objectName: "installedSearch"; Layout.fillWidth: true; Layout.minimumWidth: 160; placeholderText: "Search installed addons, notes, or folders…" }
             UI.Filter { id: statusFilter; objectName: "statusFilter"; Layout.fillWidth: true; Layout.preferredWidth: 170; Layout.minimumWidth: 120; model: ["Any status", "Enabled", "Disabled", "Update available", "Out of date"] }
-            UI.Filter { id: sourceFilter; objectName: "sourceFilter"; Layout.fillWidth: true; Layout.preferredWidth: 160; Layout.minimumWidth: 120; model: ["All sources", "WoWInterface", "CurseForge", "GitHub", "Manual installs", "Zip files"] }
+            UI.Filter { id: sourceFilter; objectName: "sourceFilter"; Layout.fillWidth: true; Layout.preferredWidth: 160; Layout.minimumWidth: 120; model: ["All sources", "CurseForge", "WoWInterface", "Tukui", "GitHub", "Manual installs", "Zip files"] }
             UI.Filter { id: sortFilter; objectName: "installedSort"; Layout.fillWidth: true; Layout.preferredWidth: 180; Layout.minimumWidth: 120; model: ["Name A–Z", "Name Z–A", "Recently installed", "Needs attention", "Most folders"] }
         }
         RowLayout {

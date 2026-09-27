@@ -19,7 +19,7 @@ DATA = Path(os.environ.get("XDG_DATA_HOME") or wowdir.HOME / ".local/share")
 STATE = DATA / "wow-addons" / "state.json"
 TRASH = DATA / "Trash"
 STAGING_PREFIX = ".wow-addons-staging-"
-UPDATABLE = ("wowinterface", "curseforge", "github")
+UPDATABLE = ("wowinterface", "curseforge", "tukui", "github")
 
 
 class Problem(Exception):

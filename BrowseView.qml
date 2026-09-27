@@ -11,46 +11,85 @@ Item {
     property bool detailsLoading: false
     property var entry: null
     readonly property bool detailsOpen: details.opened
-    readonly property var info: entry ? app.details[entry.id] || null : null
+    readonly property var detailRef: entry ? root.infoRef(entry) : null
+    readonly property var info: detailRef ? app.details[detailRef.source + ":" + detailRef.id] || null : null
     readonly property int major: app.game?.major || 0
+    readonly property string flavour: app.game?.flavour || ""
+    readonly property var sourceOrder: ["curseforge", "wowinterface", "tukui"]
     readonly property var categories: {
         let counts = {}
-        app.catalog.forEach(e => counts[e.category] = (counts[e.category] || 0) + 1)
+        app.catalog.forEach(e => { if (e.category) counts[e.category] = (counts[e.category] || 0) + 1 })
         return Object.keys(counts).sort((a, b) => a.localeCompare(b)).map(name => ({name: name, count: counts[name]}))
     }
     readonly property var results: {
+        let on = app.sourceOn
         let term = search.text.toLowerCase().trim()
         let category = categoryFilter.currentIndex > 0 ? categories[categoryFilter.currentIndex - 1]?.name : ""
         let days = [0, 31, 183, 365, 730][updatedFilter.currentIndex]
         let since = days ? Date.now() - days * 86400000 : 0
         let forGame = gameFilter.currentIndex === 0 && major > 0
         let hide = hideInstalled.checked
-        let found = app.catalog.filter(e => (!term || (e.name + " " + e.author + " " + e.dirs.join(" ")).toLowerCase().indexOf(term) >= 0)
-            && (!category || e.category === category)
-            && (!since || e.updated >= since)
-            && (!forGame || root.fits(e))
-            && (!hide || root.app.entryState(e) === "install"))
+        let found = []
+        for (let e of app.catalog) {
+            let refs = e.sources.filter(r => on[r.source] === true)
+            if (!refs.length) continue
+            if (term && (e.name + " " + e.author + " " + e.dirs.join(" ")).toLowerCase().indexOf(term) < 0) continue
+            if (category && e.category !== category) continue
+            let updated = Math.max(...refs.map(r => r.updated || 0))
+            if (since && updated < since) continue
+            if (forGame && !refs.some(r => root.fitsRef(r))) continue
+            if (hide && root.app.entryState(e) !== "install") continue
+            found.push({entry: e, refs: refs, updated: updated, downloads: refs.reduce((sum, r) => sum + (r.downloads || 0), 0)})
+        }
         let sort = sortFilter.currentIndex
-        let key = [e => e.downloads, e => e.monthly, e => e.favorites, e => e.updated][sort]
-        return found.sort(key ? (a, b) => key(b) - key(a) || a.name.localeCompare(b.name) : (a, b) => a.name.localeCompare(b.name))
+        return found.sort((a, b) => sort === 1 ? b.updated - a.updated || a.entry.name.localeCompare(b.entry.name)
+            : sort === 2 ? a.entry.name.localeCompare(b.entry.name)
+            : sort === 3 ? b.entry.name.localeCompare(a.entry.name)
+            : b.downloads - a.downloads || a.entry.name.localeCompare(b.entry.name))
     }
     onResultsChanged: grid.positionViewAtBeginning()
-    function fits(e) { return e.gameVersions.some(v => parseInt(v) === major) }
-    function versionsText(e) {
-        let ours = e.gameVersions.filter(v => parseInt(v) === major)
-        let shown = (ours.length ? ours : e.gameVersions).slice(0, 3)
-        return shown.length ? "for " + shown.join(", ") : "no game version listed"
+
+    // CurseForge tags game lines ("forever_classic"); the others list patch numbers.
+    function fitsRef(r) {
+        if (r.source === "wago") return false
+        if (r.flavours) return flavour ? r.flavours.indexOf(flavour) >= 0 : false
+        return (r.gameVersions || []).some(v => parseInt(v) === major)
+    }
+    // Browse sources the user has on. GitHub and Wago only show in details.
+    function usable(e) { return e.sources.filter(r => app.sourceOn[r.source] === true) }
+    // Where Install gets it: a source made for this game, most recently updated.
+    function bestRef(e) {
+        return usable(e).sort((a, b) => root.fitsRef(b) - root.fitsRef(a) || (b.updated || 0) - (a.updated || 0))[0] || null
+    }
+    // WoWInterface has screenshots, so its description is preferred.
+    function infoRef(e) {
+        return ["wowinterface", "curseforge", "tukui"].map(s => e.sources.find(r => r.source === s)).find(r => r) || null
+    }
+    function gameText(e) {
+        if (!major) return ""
+        return usable(e).some(r => root.fitsRef(r)) ? "Made for your game" : "Not tagged for your game"
+    }
+    function sourcesText(refs) {
+        let names = []
+        refs.forEach(r => { let n = root.app.sourceName(r.source); if (names.indexOf(n) < 0) names.push(n) })
+        return names.join(" · ")
     }
     function actionText(e) {
-        if (app.busy && (app.request.id === e.id || (app.request.ids || []).indexOf("wowi:" + e.id) >= 0)) return "Installing…"
+        if (app.busy && app.request.action === "install" && e.sources.some(r => r.id === app.request.id)) return "Installing…"
+        if (app.busy && app.request.action === "update" && (app.request.ids || []).indexOf(app.installedRowFor(e)) >= 0) return "Updating…"
         return ({installed: "Installed", update: "Update", replace: "Install…", install: "Install"})[app.entryState(e)]
     }
-    function act(e) {
+    function act(e, ref) {
         let state = app.entryState(e)
-        if (state === "update") app.update(["wowi:" + e.id])
-        else if (state !== "installed") app.installEntry(e)
+        if (state === "update" && !ref) app.update([app.installedRowFor(e)])
+        else if (state !== "installed" || ref) app.installEntry(e, ref || bestRef(e))
     }
-    function openDetails(e) { entry = e; app.loadDetails(e.id); details.open() }
+    function openDetails(e) {
+        entry = e
+        let r = infoRef(e)
+        if (r) app.loadDetails(r.source, r.id)
+        details.open()
+    }
     function closeDetails() { details.close() }
     function focusSearch() { search.forceActiveFocus() }
 
@@ -61,7 +100,7 @@ Item {
             Layout.fillWidth: true
             spacing: 10
             UI.SearchField { id: search; objectName: "browseSearch"; Layout.fillWidth: true; placeholderText: "Search " + root.app.catalog.length.toLocaleString(Qt.locale(), "f", 0) + " addons by name, author, or folder…" }
-            UI.Filter { id: sortFilter; objectName: "browseSort"; Layout.preferredWidth: 190; Layout.minimumWidth: 150; model: ["Most downloaded", "Popular this month", "Most favorited", "Recently updated", "Name A–Z"] }
+            UI.Filter { id: sortFilter; objectName: "browseSort"; Layout.preferredWidth: 190; Layout.minimumWidth: 150; model: ["Most downloaded", "Recently updated", "Name A–Z", "Name Z–A"] }
         }
         RowLayout {
             Layout.fillWidth: true
@@ -74,16 +113,35 @@ Item {
                 Layout.minimumWidth: 140
                 model: ["All categories"].concat(root.categories.map(c => c.name + "  (" + c.count + ")"))
             }
-            UI.Filter { id: gameFilter; objectName: "gameFilter"; Layout.fillWidth: true; Layout.preferredWidth: 210; Layout.minimumWidth: 140; model: [root.major ? "For my game (" + root.major + ".x)" : "For my game", "Any game version"] }
+            UI.Filter { id: gameFilter; objectName: "gameFilter"; Layout.fillWidth: true; Layout.preferredWidth: 210; Layout.minimumWidth: 140; model: [root.major ? "For my game (" + (root.app.game?.version || root.major + ".x") + ")" : "For my game", "Any game version"] }
             UI.Filter { id: updatedFilter; objectName: "updatedFilter"; Layout.fillWidth: true; Layout.preferredWidth: 190; Layout.minimumWidth: 140; model: ["Updated any time", "Updated past month", "Updated past 6 months", "Updated past year", "Updated past 2 years"] }
             UI.CheckOption { id: hideInstalled; objectName: "hideInstalled"; text: "Hide installed" }
         }
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 4
+            UI.Label { text: "SOURCES"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5; rightPadding: 6 }
+            Repeater {
+                model: root.sourceOrder
+                delegate: UI.CheckOption {
+                    id: toggle
+                    required property string modelData
+                    readonly property var status: root.app.catalogInfo.sources?.[modelData] || null
+                    objectName: "source-" + modelData
+                    checked: root.app.sourceOn[modelData] === true
+                    text: root.app.sourceName(modelData) + (status ? "  " + status.count.toLocaleString(Qt.locale(), "f", 0) : "") + (status?.error ? "  ⚠" : "")
+                    onToggled: root.app.setSource(modelData, checked)
+                    UI.Tooltip { visible: toggle.hovered && !!toggle.status?.error; text: "Couldn't refresh " + root.app.sourceName(toggle.modelData) + ": " + (toggle.status?.error || "") + " Showing the saved list." }
+                }
+            }
+            Item { Layout.fillWidth: true }
+            UI.Label { objectName: "browseCount"; text: root.results.length.toLocaleString(Qt.locale(), "f", 0) + " shown"; color: UI.Theme.muted; font.pixelSize: 11 }
+        }
         UI.Label {
             Layout.fillWidth: true
-            objectName: "browseCount"
-            text: root.results.length.toLocaleString(Qt.locale(), "f", 0) + " shown  ·  From WoWInterface" + (root.app.catalogInfo.fetchedAt ? " · catalog from " + new Date(root.app.catalogInfo.fetchedAt * 1000).toLocaleString(Qt.locale(), "MMM d, h:mm AP") : "")
-                + (root.app.catalogMessage ? " · " + root.app.catalogMessage : "")
-                + ". Game versions are what authors list; newer clients often run older addons."
+            text: "An addon listed on several sites appears once and installs from the most recently updated one. "
+                + "Categories come from WoWInterface. Game versions are what authors list; newer clients often run older addons."
+                + (root.app.catalogMessage ? "  " + root.app.catalogMessage : "")
             color: UI.Theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap
         }
         GridView {
@@ -100,13 +158,14 @@ Item {
             delegate: Rectangle {
                 id: card
                 required property var modelData
-                readonly property string installState: root.app.entryState(modelData)
+                readonly property var item: modelData.entry
+                readonly property string installState: root.app.entryState(item)
                 width: grid.cellWidth - 10
                 height: grid.cellHeight - 10
                 radius: 10
                 color: cardMouse.containsMouse ? UI.Theme.hover : UI.Theme.surface
                 border.color: card.installState === "installed" || card.installState === "update" ? UI.Theme.accent : UI.Theme.border
-                MouseArea { id: cardMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.openDetails(card.modelData) }
+                MouseArea { id: cardMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.openDetails(card.item) }
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: 12
@@ -119,28 +178,32 @@ Item {
                         Image {
                             id: thumb
                             anchors.fill: parent
-                            source: root.visible ? card.modelData.thumb : ""
+                            source: root.visible ? card.item.thumb : ""
                             sourceSize: Qt.size(168, 168)
                             asynchronous: true
                             fillMode: Image.PreserveAspectCrop
                         }
-                        UI.Label { anchors.centerIn: parent; visible: thumb.status !== Image.Ready; text: card.modelData.name.slice(0, 1).toUpperCase(); font.pixelSize: 34; color: UI.Theme.muted }
+                        UI.Label { anchors.centerIn: parent; visible: thumb.status !== Image.Ready; text: card.item.name.slice(0, 1).toUpperCase(); font.pixelSize: 34; color: UI.Theme.muted }
                     }
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         spacing: 3
-                        UI.Label { Layout.fillWidth: true; text: card.modelData.name; font.weight: Font.DemiBold; elide: Text.ElideRight }
-                        UI.Label { Layout.fillWidth: true; text: "by " + card.modelData.author + "  ·  " + card.modelData.category; color: UI.Theme.muted; font.pixelSize: 11; elide: Text.ElideRight }
+                        UI.Label { Layout.fillWidth: true; text: card.item.name; font.weight: Font.DemiBold; elide: Text.ElideRight }
                         UI.Label {
                             Layout.fillWidth: true
-                            text: "↓ " + root.app.compact(card.modelData.downloads) + "    " + root.app.compact(card.modelData.monthly) + "/mo    ♥ " + root.app.compact(card.modelData.favorites)
+                            text: [card.item.author ? "by " + card.item.author : "", card.item.category].filter(x => x).join("  ·  ") || card.item.dirs.slice(0, 3).join(", ")
+                            color: UI.Theme.muted; font.pixelSize: 11; elide: Text.ElideRight
+                        }
+                        UI.Label {
+                            Layout.fillWidth: true
+                            text: "↓ " + root.app.compact(card.modelData.downloads) + "    Updated " + root.app.monthYear(card.modelData.updated)
                             font.pixelSize: 11; elide: Text.ElideRight
                         }
                         UI.Label {
                             Layout.fillWidth: true
-                            text: "Updated " + root.app.monthYear(card.modelData.updated) + "  ·  " + root.versionsText(card.modelData)
-                            color: root.major && !root.fits(card.modelData) ? UI.Theme.warning : UI.Theme.muted
+                            text: root.sourcesText(card.modelData.refs) + (root.gameText(card.item) ? "  ·  " + root.gameText(card.item) : "")
+                            color: root.major && !card.modelData.refs.some(r => root.fitsRef(r)) ? UI.Theme.warning : UI.Theme.muted
                             font.pixelSize: 10; elide: Text.ElideRight
                         }
                         Item { Layout.fillHeight: true }
@@ -148,12 +211,12 @@ Item {
                             spacing: 8
                             UI.ActionButton {
                                 implicitHeight: 30
-                                text: root.actionText(card.modelData)
+                                text: root.actionText(card.item)
                                 primary: card.installState === "install" || card.installState === "update"
                                 enabled: !root.app.busy && card.installState !== "installed" && !!root.app.game
-                                onClicked: root.act(card.modelData)
+                                onClicked: root.act(card.item, null)
                             }
-                            UI.ActionButton { implicitHeight: 30; text: "Details"; onClicked: root.openDetails(card.modelData) }
+                            UI.ActionButton { implicitHeight: 30; text: "Details"; onClicked: root.openDetails(card.item) }
                         }
                     }
                 }
@@ -162,8 +225,9 @@ Item {
                 anchors.centerIn: parent
                 width: parent.width - 40
                 visible: !root.results.length
-                text: root.catalogLoading && !root.app.catalog.length ? "Loading the WoWInterface catalog…"
+                text: root.catalogLoading && !root.app.catalog.length ? "Loading the CurseForge, WoWInterface, and Tukui catalogs…"
                     : !root.app.catalog.length ? (root.app.catalogMessage || "The catalog isn't loaded.") + "\nUse Refresh catalog to try again."
+                    : !root.sourceOrder.some(s => root.app.sourceOn[s]) ? "Every source is turned off.\nTurn one on above."
                     : "No addons match.\nTry “Any game version”, a longer time range, or another category."
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
@@ -194,18 +258,44 @@ Item {
                 UI.ActionButton {
                     text: root.entry ? root.actionText(root.entry) : ""
                     primary: !!root.entry && ["install", "update"].indexOf(root.app.entryState(root.entry)) >= 0
-                    enabled: !!root.entry && !root.app.busy && root.app.entryState(root.entry) !== "installed" && !!root.app.game
-                    onClicked: root.act(root.entry)
+                    enabled: !!root.entry && !root.app.busy && root.app.entryState(root.entry) !== "installed" && !!root.app.game && !!root.bestRef(root.entry)
+                    onClicked: root.act(root.entry, null)
                 }
-                UI.ActionButton { text: "WoWInterface ↗"; onClicked: Qt.openUrlExternally(root.entry.url) }
                 UI.ActionButton { text: "Close"; onClicked: details.close() }
             }
             UI.Label {
                 Layout.fillWidth: true
-                text: root.entry ? "by " + root.entry.author + "  ·  " + root.entry.category + "  ·  version " + root.entry.version + "  ·  updated " + new Date(root.entry.updated).toLocaleDateString()
-                    + "\n↓ " + root.entry.downloads.toLocaleString(Qt.locale(), "f", 0) + " downloads  ·  " + root.entry.monthly.toLocaleString(Qt.locale(), "f", 0) + " this month  ·  ♥ " + root.entry.favorites.toLocaleString(Qt.locale(), "f", 0)
-                    + "\nGame versions: " + (root.entry.gameVersions.join(", ") || "none listed") + "  ·  Folders: " + root.entry.dirs.join(", ") : ""
-                color: UI.Theme.muted; font.pixelSize: 12; wrapMode: Text.Wrap; lineHeight: 1.4
+                text: root.entry ? [root.info?.author || root.entry.author ? "by " + (root.info?.author || root.entry.author) : "", root.entry.category, "Folders: " + root.entry.dirs.join(", ")].filter(x => x).join("  ·  ") : ""
+                color: UI.Theme.muted; font.pixelSize: 12; wrapMode: Text.Wrap
+            }
+            UI.Label { text: "WHERE TO GET IT"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
+            Repeater {
+                model: root.entry ? root.entry.sources : []
+                delegate: RowLayout {
+                    id: sourceRow
+                    required property var modelData
+                    readonly property bool wago: modelData.source === "wago"
+                    readonly property bool on: wago || modelData.source === "github" || root.app.sourceOn[modelData.source] === true
+                    Layout.fillWidth: true
+                    spacing: 10
+                    opacity: on ? 1 : 0.5
+                    UI.Label { Layout.preferredWidth: 104; text: root.app.sourceName(sourceRow.modelData.source); font.weight: Font.DemiBold; font.pixelSize: 12 }
+                    UI.Label {
+                        Layout.fillWidth: true
+                        text: sourceRow.wago ? "Download it on Wago, then use Add addon → .zip. Wago's data needs a paid key, so this app doesn't read it."
+                            : ["Updated " + root.app.monthYear(sourceRow.modelData.updated), sourceRow.modelData.downloads ? "↓ " + root.app.compact(sourceRow.modelData.downloads) : "",
+                               root.fitsRef(sourceRow.modelData) ? "made for your game" : "not tagged for your game", sourceRow.on ? "" : "source turned off"].filter(x => x).join("  ·  ")
+                        color: UI.Theme.muted; font.pixelSize: 11; wrapMode: Text.Wrap
+                    }
+                    UI.ActionButton {
+                        visible: !sourceRow.wago
+                        implicitHeight: 30
+                        text: "Install from here"
+                        enabled: sourceRow.on && !root.app.busy && !!root.app.game
+                        onClicked: root.act(root.entry, sourceRow.modelData)
+                    }
+                    UI.ActionButton { implicitHeight: 30; text: "Page ↗"; onClicked: Qt.openUrlExternally(sourceRow.modelData.url) }
+                }
             }
             ScrollView {
                 id: detailScroll
@@ -239,10 +329,11 @@ Item {
                     UI.Label {
                         Layout.fillWidth: true
                         visible: !root.info
-                        text: root.app.detailsError && root.app.detailsId === root.entry?.id ? root.app.detailsError : "Loading the description…"
+                        text: root.app.detailsError && root.detailRef && root.app.detailsId === root.detailRef.source + ":" + root.detailRef.id ? root.app.detailsError : "Loading the description…"
                         color: root.app.detailsError ? UI.Theme.danger : UI.Theme.muted
                         wrapMode: Text.Wrap
                     }
+                    UI.Label { visible: !!root.info; text: "ABOUT · FROM " + root.app.sourceName(root.detailRef?.source || "").toUpperCase(); color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
                     UI.Label { objectName: "detailsDescription"; Layout.fillWidth: true; text: root.info?.description || ""; wrapMode: Text.Wrap; font.pixelSize: 13; lineHeight: 1.35 }
                     UI.Label { visible: !!root.info?.changelog; text: "CHANGES"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
                     UI.Label { visible: !!root.info?.changelog; Layout.fillWidth: true; text: root.info?.changelog || ""; wrapMode: Text.Wrap; font.pixelSize: 11; color: UI.Theme.muted; font.family: "Adwaita Mono" }

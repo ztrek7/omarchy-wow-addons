@@ -7,9 +7,9 @@ A native Omarchy app for World of Warcraft addons on Linux. Browse, install, dis
 *Preview rendered from built-in example data.*
 
 - **Installed**: every addon in your AddOns folder, including ones you copied in by hand. Filter by status (enabled, disabled, update available, out of date) and source, then sort by name, install date, what needs attention, or folder count. Modules such as `DBM-Raids` are grouped under their core addon.
-- **Browse**: the WoWInterface catalog of about 8,000 addons. Search by name, author, or folder, and filter by category, game version, and last update. You can also hide what's installed. Sort by all-time downloads, downloads this month, favorites, recent updates, or name. Details show screenshots, the description, and the changelog.
+- **Browse**: CurseForge, WoWInterface, and Tukui in one list of about 17,000 addons. An addon listed on several sites appears once, with every site it's on. Install picks the most recently updated site that has a build for your game, and the details view lets you choose another site, its GitHub repository, or its Wago page. Toggle each site on or off; all start on. Search by name, author, or folder, and filter by category, game version, and last update. You can also hide what's installed. Sort by total downloads across sites, recent updates, or name.
 - **Add addon**: install the packaged release from a GitHub repository (`owner/repo`), a CurseForge addon page, an `https://` link to a .zip, or a .zip you downloaded. Recent downloads are offered as one-click picks.
-- **Updates**: checked automatically when the app opens and every 6 hours while it's open, or on demand with **Check updates**. Then update one addon or all of them. Addons you installed by hand are checked too, when their `.toc` says where they're published (`X-WoWI-ID`, `X-Curse-Project-ID`, or a WoWInterface, CurseForge, or GitHub `X-Website`). If one source fails, the next is tried. Updating a hand install replaces its folder, and the addon is tracked from then on.
+- **Updates**: checked automatically when the app opens and every 6 hours while it's open, or on demand with **Check updates**. Then update one addon or all of them. Addons you installed by hand are checked too, when their `.toc` says where they're published (`X-WoWI-ID`, `X-Curse-Project-ID`, `X-Tukui-ProjectID`, or a WoWInterface, CurseForge, or GitHub `X-Website`). If one source fails, the next is tried. Updating a hand install replaces its folder, and the addon is tracked from then on.
 - **Disable and enable** in one click; **remove** to the trash.
 - Finds Battle.net installs in Wine and Proton prefixes, and every game version inside them (`_retail_`, `_classic_`, `_classic_era_`, betas, and PTRs).
 
@@ -40,22 +40,29 @@ An addon counts as **out of date** when its `## Interface` list doesn't include 
 
 | What | Where |
 | --- | --- |
-| Chosen install folder and game version | `~/.config/wow-addons/config.json` |
+| Chosen install folder, game version, and Browse sources | `~/.config/wow-addons/config.json` |
 | Which addons came from which source and version | `~/.local/share/wow-addons/state.json` |
-| WoWInterface catalog cache (6 hours) | `~/.cache/wow-addons/wowinterface.json` |
+| Catalog caches, refreshed after 6 hours | `~/.cache/wow-addons/` |
 | The installed app | `~/.local/share/wow-addons/app` |
 
 Game folders are detected under `~/Games/*/drive_c`, `~/.wine`, and Steam's Proton prefixes. Pick another folder in **Settings**.
 
 ## Sources and privacy
 
-The app only contacts these hosts:
+No source needs an account or API key.
 
-- `api.mmoui.com` and `cdn.wowinterface.com`: the public WoWInterface catalog and downloads.
-- `api.cfwidget.com` and `edge.forgecdn.net`: CurseForge addons. CFWidget is a public, read-only mirror of CurseForge project files, and downloads come from CurseForge's CDN.
-- `api.github.com` and `github.com`: GitHub releases.
+| Site | How the app reads it | Downloads from |
+| --- | --- | --- |
+| CurseForge | The daily community catalog published by [instawow](https://github.com/layday/instawow-data) for browsing, and [CFWidget](https://www.cfwidget.com/) for details and file lists | CurseForge's CDN (`edge.forgecdn.net`), checked against the listed file size |
+| WoWInterface | Its public API (`api.mmoui.com`) | `cdn.wowinterface.com`, checked against the published MD5 |
+| Tukui (ElvUI, Tukui) | Its public API (`api.tukui.org`) | `api.tukui.org` |
+| GitHub | Release lists (`api.github.com`) for repositories linked from the catalog, or ones you add | `github.com` release assets |
 
-It uses no accounts, API keys, analytics, or root. Only WoWInterface is browsable, because CurseForge's and Wago's search APIs require keys. CurseForge addons still install and update by page link, and anything else installs as a .zip. Downloads are verified against WoWInterface's MD5 or CurseForge's file size. For many GitHub update checks, set `GITHUB_TOKEN` to raise GitHub's anonymous limit of 60 requests an hour.
+CurseForge's official API only issues keys to approved applications. The community catalog and CFWidget are built by people who hold such keys and publish the results openly. That's how other key-free managers work too.
+
+**Wago Addons** isn't a source. Its data API needs a key that Wago gives to paying supporters, and its `robots.txt` disallows automated downloads. When an addon is also on Wago, its details link to the Wago page, and most Wago addons are also on CurseForge or WoWInterface.
+
+The app uses no analytics or root. For many GitHub update checks, set `GITHUB_TOKEN` to raise GitHub's anonymous limit of 60 requests an hour.
 
 ## Development
 
@@ -65,6 +72,6 @@ WOW_ADDONS_DEMO=1 quickshell -n -p "$PWD/Smoke.qml"          # UI filters and so
 quickshell -n -p "$PWD/Verify.qml"                           # read-only check against your install
 ```
 
-`backend.py` is the JSON bridge the window calls. `wowdir.py` finds installs and reads `.toc` files, `library.py` changes the AddOns folder, and `sources.py` talks to WoWInterface, CurseForge, and GitHub and unpacks archives.
+`backend.py` is the JSON bridge the window calls. `wowdir.py` finds installs and reads `.toc` files, `library.py` changes the AddOns folder, and `sources.py` talks to each site and unpacks archives, and `catalog.py` merges the sites' lists for Browse.
 
-Not affiliated with Blizzard Entertainment or WoWInterface. World of Warcraft is a trademark of Blizzard Entertainment, Inc.
+Not affiliated with Blizzard Entertainment, CurseForge, WoWInterface, Tukui, or Wago. World of Warcraft is a trademark of Blizzard Entertainment, Inc.

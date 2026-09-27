@@ -1,9 +1,10 @@
-"""Addon sources: the WoWInterface catalog, GitHub releases, and .zip archives.
+"""Addon sources: WoWInterface, CurseForge, Tukui, GitHub releases, and .zip archives.
 
-WoWInterface publishes its catalog without an API key. CurseForge's own API
-needs one, so single CurseForge projects are looked up through CFWidget, a
-public read-only mirror, and downloaded from CurseForge's CDN. Wago needs a
-key and isn't used.
+Nothing here needs an API key. WoWInterface and Tukui publish open APIs.
+CurseForge's own API requires an approved key, so CurseForge projects are read
+from CFWidget, a public mirror, and files come from CurseForge's CDN. Wago
+Addons is left out: its data API needs a key and its site disallows automated
+downloads.
 """
 import hashlib
 import html
@@ -23,6 +24,7 @@ from library import Problem
 
 CACHE = Path(os.environ.get("XDG_CACHE_HOME") or wowdir.HOME / ".cache") / "wow-addons"
 WOWI = "https://api.mmoui.com/v3/game/WOW"
+TUKUI = "https://api.tukui.org/v1/addons"
 USER_AGENT = "omarchy-wow-addons/0.1 (+https://github.com/ztrek7/omarchy-wow-addons)"
 CATALOG_TTL = 6 * 3600
 MAX_DOWNLOAD = 300 * 1024 * 1024
@@ -63,7 +65,7 @@ def fetch_json(url):
 
 # --- WoWInterface -----------------------------------------------------------
 
-def compact_catalog(files, categories):
+def compact_wowinterface(files, categories):
     names = {c.get("UICATID"): c.get("UICATTitle", "") for c in categories}
     entries = []
     for item in files:
@@ -102,43 +104,6 @@ def version_key(value):
     return [int(part) if part.isdigit() else 0 for part in value.split(".")]
 
 
-def catalog_path():
-    return CACHE / "wowinterface.json"
-
-
-def load_catalog():
-    try:
-        return json.loads(catalog_path().read_text())
-    except (OSError, ValueError):
-        return None
-
-
-def refresh_catalog(force=False, max_age=CATALOG_TTL):
-    """Return catalog metadata, downloading a fresh copy when the cache is older than max_age seconds."""
-    cached = load_catalog()
-    if cached and not force and time.time() - cached.get("fetchedAt", 0) < max_age:
-        return describe(cached, "")
-    try:
-        files = fetch_json(f"{WOWI}/filelist.json")
-        categories = fetch_json(f"{WOWI}/categorylist.json")
-        if not isinstance(files, list) or not isinstance(categories, list):
-            raise Problem("WoWInterface returned an unexpected catalog format.")
-    except Problem as error:
-        if cached:
-            return describe(cached, f"Showing the saved catalog. {error}")
-        raise
-    data = {"fetchedAt": int(time.time()), "entries": compact_catalog(files, categories)}
-    CACHE.mkdir(parents=True, exist_ok=True)
-    temporary = catalog_path().with_suffix(".tmp")
-    temporary.write_text(json.dumps(data, separators=(",", ":")))
-    temporary.replace(catalog_path())
-    return describe(data, "")
-
-
-def describe(data, message):
-    return {"path": str(catalog_path()), "count": len(data["entries"]), "fetchedAt": data["fetchedAt"], "message": message}
-
-
 BBCODE_LINK = re.compile(r"\[url=\"?([^\]\"]*)\"?\](.*?)\[/url\]", re.IGNORECASE | re.DOTALL)
 BBCODE_MEDIA = re.compile(r"\[(img|video|youtube|media)[^\]]*\].*?\[/\1\]", re.IGNORECASE | re.DOTALL)
 BBCODE_TAG = re.compile(r"\[/?[a-zA-Z*][^\]]{0,80}\]")
@@ -175,6 +140,86 @@ def wowi_details(addon_id):
         "author": html.unescape(item.get("UIAuthorName") or ""),
         "pending": item.get("UIPending") == "1",
     }
+
+
+HTML_BREAK = re.compile(r"<\s*(br|/p|/div|/h[1-6]|/tr)\b[^>]*>", re.IGNORECASE)
+HTML_ITEM = re.compile(r"<\s*li\b[^>]*>", re.IGNORECASE)
+HTML_TAG = re.compile(r"<[^>]+>")
+
+
+def html_text(value):
+    text = HTML_ITEM.sub("\n  •  ", HTML_BREAK.sub("\n", value or ""))
+    text = html.unescape(HTML_TAG.sub("", text))
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n\s*\n(  •  )", r"\n\1", text)  # List items wrapped in paragraphs.
+    return re.sub(r"\n{3,}", "\n\n", text).strip()[:8000]
+
+
+def markdown_text(value):
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", value or "")
+    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"^#+\s*", "", text, flags=re.MULTILINE).replace("**", "")
+    return re.sub(r"\n{3,}", "\n\n", text).strip()[:8000]
+
+
+# --- Tukui --------------------------------------------------------------------
+
+def compact_tukui(item):
+    gallery = item.get("gallery_url")
+    if isinstance(gallery, str):
+        gallery = re.findall(r"https://[^'\"\s,\]]+", gallery)
+    return {
+        "id": item["slug"], "numericId": str(item.get("id", "")), "name": item.get("name") or item["slug"],
+        "author": item.get("author") or "", "url": item.get("web_url") or "https://tukui.org",
+        "version": item.get("version") or "", "updated": _date_ms(item.get("last_update")),
+        "gameVersions": item.get("patch") or [], "dirs": item.get("directories") or [item.get("name") or item["slug"]],
+        "summary": item.get("small_desc") or "", "description": markdown_text(item.get("desc")),
+        "thumb": item.get("logo_square_url") or item.get("screenshot_url") or "",
+        "images": [u for u in [item.get("screenshot_url")] + list(gallery or []) if isinstance(u, str) and u.startswith("https://")][:6],
+        "download": item.get("url") or "",
+    }
+
+
+def _date_ms(value):
+    try:
+        return int(time.mktime(time.strptime(str(value)[:10], "%Y-%m-%d")) * 1000)
+    except ValueError:
+        return 0
+
+
+def tukui_release(project):
+    """Tukui lists only a handful of projects; look one up by slug or its numeric ID (-2 is ElvUI)."""
+    data = fetch_json(TUKUI)
+    for item in data if isinstance(data, list) else []:
+        if isinstance(item, dict) and str(project).lower() in (str(item.get("slug", "")).lower(), str(item.get("id"))):
+            entry = compact_tukui(item)
+            if not entry["download"].startswith("https://"):
+                break
+            return entry
+    raise Problem(f"Tukui doesn't list {project}.")
+
+
+# --- Details for Browse ---------------------------------------------------------
+
+def details(source, ident):
+    """A description, screenshots, and credits for the Browse details view."""
+    if source == "wowinterface":
+        info = wowi_details(ident)
+        return {"source": source, "id": str(ident), "name": info["name"], "author": info["author"], "description": info["description"],
+                "changelog": info["changelog"], "images": info["images"], "version": info["version"]}
+    if source == "tukui":
+        info = tukui_release(ident)
+        return {"source": source, "id": str(ident), "name": info["name"], "author": info["author"], "description": info["description"] or info["summary"],
+                "changelog": "", "images": info["images"], "version": info["version"]}
+    if source == "curseforge":
+        data = cfwidget(ident)
+        members = [m.get("username") for m in data.get("members") or [] if isinstance(m, dict) and m.get("username")]
+        thumbnail = data.get("thumbnail")
+        return {"source": source, "id": str(ident), "name": data.get("title") or str(ident), "author": ", ".join(members[:3]),
+                "description": html_text(data.get("description")) or data.get("summary") or "", "changelog": "",
+                "images": [thumbnail] if isinstance(thumbnail, str) and thumbnail.startswith("https://") else [],
+                "version": ((data.get("download") or {}).get("display") or ""), "categories": data.get("categories") or []}
+    raise Problem("Details aren't available for that source.")
 
 
 # --- GitHub releases --------------------------------------------------------
@@ -271,7 +316,7 @@ def choose_curseforge_file(files, game):
     return max(pool, key=lambda f: f.get("uploaded_at") or "") if pool else None
 
 
-def curseforge_release(project, game):
+def cfwidget(project):
     project = str(project).lower()
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", project):
         raise Problem("Unknown CurseForge project.")
@@ -280,9 +325,15 @@ def curseforge_release(project, game):
         data = fetch_json(f"{CFWIDGET}/{path}")
     except Problem as error:
         raise Problem(f"Couldn't look up CurseForge project {project}: {error}")
-    files = data.get("files") if isinstance(data, dict) else None
-    if not isinstance(files, list):
+    if not isinstance(data, dict) or not isinstance(data.get("files"), list):
         raise Problem("CFWidget is still gathering that CurseForge project. Try again in a minute.")
+    return data
+
+
+def curseforge_release(project, game):
+    project = str(project).lower()
+    data = cfwidget(project)
+    files = data["files"]
     title = data.get("title") or project
     chosen = choose_curseforge_file(files, game)
     if not chosen:

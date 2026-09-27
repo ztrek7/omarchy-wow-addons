@@ -13,7 +13,8 @@
     "version": "1.15.7",
     "interface": 11507,
     "major": 1,
-    "addons": "/tmp/demo/World of Warcraft/_classic_era_/Interface/AddOns"
+    "addons": "/tmp/demo/World of Warcraft/_classic_era_/Interface/AddOns",
+    "flavour": "vanilla_classic"
    },
    {
     "key": "_retail_",
@@ -22,7 +23,8 @@
     "version": "12.1.0",
     "interface": 120100,
     "major": 12,
-    "addons": "/tmp/demo/World of Warcraft/_retail_/Interface/AddOns"
+    "addons": "/tmp/demo/World of Warcraft/_retail_/Interface/AddOns",
+    "flavour": "mainline"
    }
   ],
   "flavor": {
@@ -32,7 +34,13 @@
    "version": "1.15.7",
    "interface": 11507,
    "major": 1,
-   "addons": "/tmp/demo/World of Warcraft/_classic_era_/Interface/AddOns"
+   "addons": "/tmp/demo/World of Warcraft/_classic_era_/Interface/AddOns",
+   "flavour": "vanilla_classic"
+  },
+  "sources": {
+   "curseforge": true,
+   "wowinterface": true,
+   "tukui": true
   }
  },
  "addons": [
@@ -256,1947 +264,3172 @@
  },
  "catalog": [
   {
-   "id": "9001",
+   "key": "wowinterface:9001",
    "name": "Quest Compass",
    "author": "Example Author",
    "category": "Map, Coords, Compasses",
-   "version": "2.5.0",
-   "updated": 1790254820688,
-   "downloads": 482000,
-   "monthly": 3900,
-   "favorites": 1210,
-   "gameVersions": [
-    "1.15.7",
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "QuestCompass",
     "QuestCompass_Options"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "quest-compass",
+     "url": "https://www.curseforge.com/wow/addons/quest-compass",
+     "updated": 1790343925412,
+     "downloads": 1250000,
+     "flavours": [
+      "vanilla_classic",
+      "mainline"
+     ],
+     "numericId": "501"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9001",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1790254820688,
+     "downloads": 482000,
+     "gameVersions": [
+      "1.15.7",
+      "12.1.0"
+     ],
+     "version": "2.5.0",
+     "monthly": 3900,
+     "favorites": 1210
+    },
+    {
+     "source": "wago",
+     "id": "aB3dE6gH",
+     "url": "https://addons.wago.io/addons/aB3dE6gH"
+    }
+   ]
   },
   {
-   "id": "9002",
+   "key": "wowinterface:9002",
    "name": "Minimal Frames",
    "author": "Example Author",
    "category": "Unit Mods",
-   "version": "1.9",
-   "updated": 1787058020688,
-   "downloads": 91000,
-   "monthly": 700,
-   "favorites": 310,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MinimalFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9002",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1787058020688,
+     "downloads": 91000,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "1.9",
+     "monthly": 700,
+     "favorites": 310
+    }
+   ]
   },
   {
-   "id": "9003",
+   "key": "wowinterface:9003",
    "name": "Trade Ledger Classic Fix",
    "author": "Someone Else",
    "category": "Auction House & Vendors",
-   "version": "0.3",
-   "updated": 1712754020688,
-   "downloads": 12000,
-   "monthly": 4,
-   "favorites": 20,
-   "gameVersions": [
-    "1.13.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TradeLedger"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9003",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1712754020688,
+     "downloads": 12000,
+     "gameVersions": [
+      "1.13.2"
+     ],
+     "version": "0.3",
+     "monthly": 4,
+     "favorites": 20
+    }
+   ]
   },
   {
-   "id": "9101",
+   "key": "wowinterface:9101",
    "name": "Arcane Bars",
    "author": "Author 00",
    "category": "Action Bar Mods",
-   "version": "0.0",
-   "updated": 1790514020688,
-   "downloads": 4611,
-   "monthly": 0,
-   "favorites": 22,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9101",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1790514020688,
+     "downloads": 4611,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "0.0",
+     "monthly": 0,
+     "favorites": 22
+    }
+   ]
   },
   {
-   "id": "9102",
+   "key": "wowinterface:9102",
    "name": "Arcane Chat",
    "author": "Author 01",
    "category": "Auction House & Vendors",
-   "version": "0.1",
-   "updated": 1785934820688,
-   "downloads": 6148,
-   "monthly": 13,
-   "favorites": 44,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9102",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1785934820688,
+     "downloads": 6148,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "0.1",
+     "monthly": 13,
+     "favorites": 44
+    }
+   ]
   },
   {
-   "id": "9103",
+   "key": "wowinterface:9103",
    "name": "Arcane Maps",
    "author": "Author 02",
    "category": "Bags, Bank, Inventory",
-   "version": "0.2",
-   "updated": 1781355620688,
-   "downloads": 7685,
-   "monthly": 26,
-   "favorites": 66,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9103",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1781355620688,
+     "downloads": 7685,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "0.2",
+     "monthly": 26,
+     "favorites": 66
+    }
+   ]
   },
   {
-   "id": "9104",
+   "key": "wowinterface:9104",
    "name": "Arcane Loot",
    "author": "Author 03",
    "category": "Map, Coords, Compasses",
-   "version": "0.3",
-   "updated": 1776776420688,
-   "downloads": 9222,
-   "monthly": 39,
-   "favorites": 88,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "arcane-loot",
+     "url": "https://www.curseforge.com/wow/addons/arcane-loot",
+     "updated": 1776690020688,
+     "downloads": 36888,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "606"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9104",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1776776420688,
+     "downloads": 9222,
+     "gameVersions": [],
+     "version": "0.3",
+     "monthly": 39,
+     "favorites": 88
+    }
+   ]
   },
   {
-   "id": "9105",
+   "key": "wowinterface:9105",
    "name": "Arcane Frames",
    "author": "Author 04",
    "category": "Unit Mods",
-   "version": "0.4",
-   "updated": 1772197220688,
-   "downloads": 10759,
-   "monthly": 52,
-   "favorites": 110,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9105",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1772197220688,
+     "downloads": 10759,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "0.4",
+     "monthly": 52,
+     "favorites": 110
+    }
+   ]
   },
   {
-   "id": "9106",
+   "key": "wowinterface:9106",
    "name": "Arcane Timers",
    "author": "Author 05",
    "category": "Chat Mods",
-   "version": "0.5",
-   "updated": 1767618020688,
-   "downloads": 12296,
-   "monthly": 65,
-   "favorites": 132,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9106",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1767618020688,
+     "downloads": 12296,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "0.5",
+     "monthly": 65,
+     "favorites": 132
+    }
+   ]
   },
   {
-   "id": "9107",
+   "key": "wowinterface:9107",
    "name": "Arcane Mail",
    "author": "Author 06",
    "category": "Libraries",
-   "version": "0.6",
-   "updated": 1763038820688,
-   "downloads": 13833,
-   "monthly": 78,
-   "favorites": 154,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "arcane-mail",
+     "url": "https://www.curseforge.com/wow/addons/arcane-mail",
+     "updated": 1762952420688,
+     "downloads": 55332,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "609"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9107",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1763038820688,
+     "downloads": 13833,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "0.6",
+     "monthly": 78,
+     "favorites": 154
+    }
+   ]
   },
   {
-   "id": "9108",
+   "key": "wowinterface:9108",
    "name": "Arcane Tooltips",
    "author": "Author 07",
    "category": "Classic - General",
-   "version": "0.7",
-   "updated": 1758459620688,
-   "downloads": 15370,
-   "monthly": 91,
-   "favorites": 176,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9108",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1758459620688,
+     "downloads": 15370,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "0.7",
+     "monthly": 91,
+     "favorites": 176
+    }
+   ]
   },
   {
-   "id": "9109",
+   "key": "wowinterface:9109",
    "name": "Arcane Vendor",
    "author": "Author 08",
    "category": "Action Bar Mods",
-   "version": "0.8",
-   "updated": 1753880420688,
-   "downloads": 16907,
-   "monthly": 104,
-   "favorites": 198,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9109",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1753880420688,
+     "downloads": 16907,
+     "gameVersions": [],
+     "version": "0.8",
+     "monthly": 104,
+     "favorites": 198
+    }
+   ]
   },
   {
-   "id": "9110",
+   "key": "wowinterface:9110",
    "name": "Arcane Bags",
    "author": "Author 09",
    "category": "Auction House & Vendors",
-   "version": "0.9",
-   "updated": 1749301220688,
-   "downloads": 18444,
-   "monthly": 117,
-   "favorites": 220,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "ArcaneBags"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "arcane-bags",
+     "url": "https://www.curseforge.com/wow/addons/arcane-bags",
+     "updated": 1749214820688,
+     "downloads": 73776,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "612"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9110",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1749301220688,
+     "downloads": 18444,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "0.9",
+     "monthly": 117,
+     "favorites": 220
+    }
+   ]
   },
   {
-   "id": "9111",
+   "key": "wowinterface:9111",
    "name": "Swift Bars",
    "author": "Author 10",
    "category": "Auction House & Vendors",
-   "version": "1.0",
-   "updated": 1787317220688,
-   "downloads": 9222,
-   "monthly": 7,
-   "favorites": 33,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9111",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1787317220688,
+     "downloads": 9222,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "1.0",
+     "monthly": 7,
+     "favorites": 33
+    }
+   ]
   },
   {
-   "id": "9112",
+   "key": "wowinterface:9112",
    "name": "Swift Chat",
    "author": "Author 11",
    "category": "Bags, Bank, Inventory",
-   "version": "1.1",
-   "updated": 1782738020688,
-   "downloads": 12296,
-   "monthly": 20,
-   "favorites": 66,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9112",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1782738020688,
+     "downloads": 12296,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "1.1",
+     "monthly": 20,
+     "favorites": 66
+    }
+   ]
   },
   {
-   "id": "9113",
+   "key": "wowinterface:9113",
    "name": "Swift Maps",
    "author": "Author 12",
    "category": "Map, Coords, Compasses",
-   "version": "1.2",
-   "updated": 1778158820688,
-   "downloads": 15370,
-   "monthly": 33,
-   "favorites": 99,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "swift-maps",
+     "url": "https://www.curseforge.com/wow/addons/swift-maps",
+     "updated": 1778072420688,
+     "downloads": 61480,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "615"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9113",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1778158820688,
+     "downloads": 15370,
+     "gameVersions": [],
+     "version": "1.2",
+     "monthly": 33,
+     "favorites": 99
+    }
+   ]
   },
   {
-   "id": "9114",
+   "key": "wowinterface:9114",
    "name": "Swift Loot",
    "author": "Author 13",
    "category": "Unit Mods",
-   "version": "1.3",
-   "updated": 1773579620688,
-   "downloads": 18444,
-   "monthly": 46,
-   "favorites": 132,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9114",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1773579620688,
+     "downloads": 18444,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "1.3",
+     "monthly": 46,
+     "favorites": 132
+    }
+   ]
   },
   {
-   "id": "9115",
+   "key": "wowinterface:9115",
    "name": "Swift Frames",
    "author": "Author 14",
    "category": "Chat Mods",
-   "version": "1.4",
-   "updated": 1769000420688,
-   "downloads": 21518,
-   "monthly": 59,
-   "favorites": 165,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9115",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1769000420688,
+     "downloads": 21518,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "1.4",
+     "monthly": 59,
+     "favorites": 165
+    }
+   ]
   },
   {
-   "id": "9116",
+   "key": "wowinterface:9116",
    "name": "Swift Timers",
    "author": "Author 15",
    "category": "Libraries",
-   "version": "1.5",
-   "updated": 1764421220688,
-   "downloads": 24592,
-   "monthly": 72,
-   "favorites": 198,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "swift-timers",
+     "url": "https://www.curseforge.com/wow/addons/swift-timers",
+     "updated": 1764334820688,
+     "downloads": 98368,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "618"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9116",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1764421220688,
+     "downloads": 24592,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "1.5",
+     "monthly": 72,
+     "favorites": 198
+    }
+   ]
   },
   {
-   "id": "9117",
+   "key": "wowinterface:9117",
    "name": "Swift Mail",
    "author": "Author 16",
    "category": "Classic - General",
-   "version": "1.6",
-   "updated": 1759842020688,
-   "downloads": 27666,
-   "monthly": 85,
-   "favorites": 231,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9117",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1759842020688,
+     "downloads": 27666,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "1.6",
+     "monthly": 85,
+     "favorites": 231
+    }
+   ]
   },
   {
-   "id": "9118",
+   "key": "wowinterface:9118",
    "name": "Swift Tooltips",
    "author": "Author 17",
    "category": "Action Bar Mods",
-   "version": "1.7",
-   "updated": 1755262820688,
-   "downloads": 30740,
-   "monthly": 98,
-   "favorites": 264,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9118",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1755262820688,
+     "downloads": 30740,
+     "gameVersions": [],
+     "version": "1.7",
+     "monthly": 98,
+     "favorites": 264
+    }
+   ]
   },
   {
-   "id": "9119",
+   "key": "wowinterface:9119",
    "name": "Swift Vendor",
    "author": "Author 18",
    "category": "Auction House & Vendors",
-   "version": "1.8",
-   "updated": 1750683620688,
-   "downloads": 33814,
-   "monthly": 111,
-   "favorites": 297,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "swift-vendor",
+     "url": "https://www.curseforge.com/wow/addons/swift-vendor",
+     "updated": 1750597220688,
+     "downloads": 135256,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "621"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9119",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1750683620688,
+     "downloads": 33814,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "1.8",
+     "monthly": 111,
+     "favorites": 297
+    }
+   ]
   },
   {
-   "id": "9120",
+   "key": "wowinterface:9120",
    "name": "Swift Bags",
    "author": "Author 19",
    "category": "Bags, Bank, Inventory",
-   "version": "1.9",
-   "updated": 1746104420688,
-   "downloads": 36888,
-   "monthly": 124,
-   "favorites": 330,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SwiftBags"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9120",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1746104420688,
+     "downloads": 36888,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "1.9",
+     "monthly": 124,
+     "favorites": 330
+    }
+   ]
   },
   {
-   "id": "9121",
+   "key": "wowinterface:9121",
    "name": "Tidy Bars",
    "author": "Author 20",
    "category": "Bags, Bank, Inventory",
-   "version": "2.0",
-   "updated": 1784120420688,
-   "downloads": 13833,
-   "monthly": 14,
-   "favorites": 44,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9121",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1784120420688,
+     "downloads": 13833,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "2.0",
+     "monthly": 14,
+     "favorites": 44
+    }
+   ]
   },
   {
-   "id": "9122",
+   "key": "wowinterface:9122",
    "name": "Tidy Chat",
    "author": "Author 21",
    "category": "Map, Coords, Compasses",
-   "version": "2.1",
-   "updated": 1779541220688,
-   "downloads": 18444,
-   "monthly": 27,
-   "favorites": 88,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "tidy-chat",
+     "url": "https://www.curseforge.com/wow/addons/tidy-chat",
+     "updated": 1779454820688,
+     "downloads": 73776,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "624"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9122",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1779541220688,
+     "downloads": 18444,
+     "gameVersions": [],
+     "version": "2.1",
+     "monthly": 27,
+     "favorites": 88
+    }
+   ]
   },
   {
-   "id": "9123",
+   "key": "wowinterface:9123",
    "name": "Tidy Maps",
    "author": "Author 22",
    "category": "Unit Mods",
-   "version": "2.2",
-   "updated": 1774962020688,
-   "downloads": 23055,
-   "monthly": 40,
-   "favorites": 132,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9123",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1774962020688,
+     "downloads": 23055,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "2.2",
+     "monthly": 40,
+     "favorites": 132
+    }
+   ]
   },
   {
-   "id": "9124",
+   "key": "wowinterface:9124",
    "name": "Tidy Loot",
    "author": "Author 23",
    "category": "Chat Mods",
-   "version": "2.3",
-   "updated": 1770382820688,
-   "downloads": 27666,
-   "monthly": 53,
-   "favorites": 176,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9124",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1770382820688,
+     "downloads": 27666,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "2.3",
+     "monthly": 53,
+     "favorites": 176
+    }
+   ]
   },
   {
-   "id": "9125",
+   "key": "wowinterface:9125",
    "name": "Tidy Frames",
    "author": "Author 24",
    "category": "Libraries",
-   "version": "2.4",
-   "updated": 1765803620688,
-   "downloads": 32277,
-   "monthly": 66,
-   "favorites": 220,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "tidy-frames",
+     "url": "https://www.curseforge.com/wow/addons/tidy-frames",
+     "updated": 1765717220688,
+     "downloads": 129108,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "627"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9125",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1765803620688,
+     "downloads": 32277,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "2.4",
+     "monthly": 66,
+     "favorites": 220
+    }
+   ]
   },
   {
-   "id": "9126",
+   "key": "wowinterface:9126",
    "name": "Tidy Timers",
    "author": "Author 25",
    "category": "Classic - General",
-   "version": "2.5",
-   "updated": 1761224420688,
-   "downloads": 36888,
-   "monthly": 79,
-   "favorites": 264,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9126",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1761224420688,
+     "downloads": 36888,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "2.5",
+     "monthly": 79,
+     "favorites": 264
+    }
+   ]
   },
   {
-   "id": "9127",
+   "key": "wowinterface:9127",
    "name": "Tidy Mail",
    "author": "Author 26",
    "category": "Action Bar Mods",
-   "version": "2.6",
-   "updated": 1756645220688,
-   "downloads": 41499,
-   "monthly": 92,
-   "favorites": 308,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9127",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1756645220688,
+     "downloads": 41499,
+     "gameVersions": [],
+     "version": "2.6",
+     "monthly": 92,
+     "favorites": 308
+    }
+   ]
   },
   {
-   "id": "9128",
+   "key": "wowinterface:9128",
    "name": "Tidy Tooltips",
    "author": "Author 27",
    "category": "Auction House & Vendors",
-   "version": "2.7",
-   "updated": 1752066020688,
-   "downloads": 46110,
-   "monthly": 105,
-   "favorites": 352,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "tidy-tooltips",
+     "url": "https://www.curseforge.com/wow/addons/tidy-tooltips",
+     "updated": 1751979620688,
+     "downloads": 184440,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "630"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9128",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1752066020688,
+     "downloads": 46110,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "2.7",
+     "monthly": 105,
+     "favorites": 352
+    }
+   ]
   },
   {
-   "id": "9129",
+   "key": "wowinterface:9129",
    "name": "Tidy Vendor",
    "author": "Author 28",
    "category": "Bags, Bank, Inventory",
-   "version": "2.8",
-   "updated": 1747486820688,
-   "downloads": 50721,
-   "monthly": 118,
-   "favorites": 396,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9129",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1747486820688,
+     "downloads": 50721,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "2.8",
+     "monthly": 118,
+     "favorites": 396
+    }
+   ]
   },
   {
-   "id": "9130",
+   "key": "wowinterface:9130",
    "name": "Tidy Bags",
    "author": "Author 29",
    "category": "Map, Coords, Compasses",
-   "version": "2.9",
-   "updated": 1742907620688,
-   "downloads": 55332,
-   "monthly": 131,
-   "favorites": 440,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "TidyBags"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9130",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1742907620688,
+     "downloads": 55332,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "2.9",
+     "monthly": 131,
+     "favorites": 440
+    }
+   ]
   },
   {
-   "id": "9131",
+   "key": "wowinterface:9131",
    "name": "Bright Bars",
    "author": "Author 30",
    "category": "Map, Coords, Compasses",
-   "version": "3.0",
-   "updated": 1780923620688,
-   "downloads": 18444,
-   "monthly": 21,
-   "favorites": 55,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "bright-bars",
+     "url": "https://www.curseforge.com/wow/addons/bright-bars",
+     "updated": 1780837220688,
+     "downloads": 73776,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "633"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9131",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1780923620688,
+     "downloads": 18444,
+     "gameVersions": [],
+     "version": "3.0",
+     "monthly": 21,
+     "favorites": 55
+    }
+   ]
   },
   {
-   "id": "9132",
+   "key": "wowinterface:9132",
    "name": "Bright Chat",
    "author": "Author 31",
    "category": "Unit Mods",
-   "version": "3.1",
-   "updated": 1776344420688,
-   "downloads": 24592,
-   "monthly": 34,
-   "favorites": 110,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9132",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1776344420688,
+     "downloads": 24592,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "3.1",
+     "monthly": 34,
+     "favorites": 110
+    }
+   ]
   },
   {
-   "id": "9133",
+   "key": "wowinterface:9133",
    "name": "Bright Maps",
    "author": "Author 32",
    "category": "Chat Mods",
-   "version": "3.2",
-   "updated": 1771765220688,
-   "downloads": 30740,
-   "monthly": 47,
-   "favorites": 165,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9133",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1771765220688,
+     "downloads": 30740,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "3.2",
+     "monthly": 47,
+     "favorites": 165
+    }
+   ]
   },
   {
-   "id": "9134",
+   "key": "wowinterface:9134",
    "name": "Bright Loot",
    "author": "Author 33",
    "category": "Libraries",
-   "version": "3.3",
-   "updated": 1767186020688,
-   "downloads": 36888,
-   "monthly": 60,
-   "favorites": 220,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "bright-loot",
+     "url": "https://www.curseforge.com/wow/addons/bright-loot",
+     "updated": 1767099620688,
+     "downloads": 147552,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "636"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9134",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1767186020688,
+     "downloads": 36888,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "3.3",
+     "monthly": 60,
+     "favorites": 220
+    }
+   ]
   },
   {
-   "id": "9135",
+   "key": "wowinterface:9135",
    "name": "Bright Frames",
    "author": "Author 34",
    "category": "Classic - General",
-   "version": "3.4",
-   "updated": 1762606820688,
-   "downloads": 43036,
-   "monthly": 73,
-   "favorites": 275,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9135",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1762606820688,
+     "downloads": 43036,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "3.4",
+     "monthly": 73,
+     "favorites": 275
+    }
+   ]
   },
   {
-   "id": "9136",
+   "key": "wowinterface:9136",
    "name": "Bright Timers",
    "author": "Author 35",
    "category": "Action Bar Mods",
-   "version": "3.5",
-   "updated": 1758027620688,
-   "downloads": 49184,
-   "monthly": 86,
-   "favorites": 330,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9136",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1758027620688,
+     "downloads": 49184,
+     "gameVersions": [],
+     "version": "3.5",
+     "monthly": 86,
+     "favorites": 330
+    }
+   ]
   },
   {
-   "id": "9137",
+   "key": "wowinterface:9137",
    "name": "Bright Mail",
    "author": "Author 36",
    "category": "Auction House & Vendors",
-   "version": "3.6",
-   "updated": 1753448420688,
-   "downloads": 55332,
-   "monthly": 99,
-   "favorites": 385,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "bright-mail",
+     "url": "https://www.curseforge.com/wow/addons/bright-mail",
+     "updated": 1753362020688,
+     "downloads": 221328,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "639"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9137",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1753448420688,
+     "downloads": 55332,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "3.6",
+     "monthly": 99,
+     "favorites": 385
+    }
+   ]
   },
   {
-   "id": "9138",
+   "key": "wowinterface:9138",
    "name": "Bright Tooltips",
    "author": "Author 37",
    "category": "Bags, Bank, Inventory",
-   "version": "3.7",
-   "updated": 1748869220688,
-   "downloads": 61480,
-   "monthly": 112,
-   "favorites": 440,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9138",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1748869220688,
+     "downloads": 61480,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "3.7",
+     "monthly": 112,
+     "favorites": 440
+    }
+   ]
   },
   {
-   "id": "9139",
+   "key": "wowinterface:9139",
    "name": "Bright Vendor",
    "author": "Author 38",
    "category": "Map, Coords, Compasses",
-   "version": "3.8",
-   "updated": 1744290020688,
-   "downloads": 67628,
-   "monthly": 125,
-   "favorites": 495,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9139",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1744290020688,
+     "downloads": 67628,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "3.8",
+     "monthly": 125,
+     "favorites": 495
+    }
+   ]
   },
   {
-   "id": "9140",
+   "key": "wowinterface:9140",
    "name": "Bright Bags",
    "author": "Author 39",
    "category": "Unit Mods",
-   "version": "3.9",
-   "updated": 1739710820688,
-   "downloads": 73776,
-   "monthly": 138,
-   "favorites": 550,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "BrightBags"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "bright-bags",
+     "url": "https://www.curseforge.com/wow/addons/bright-bags",
+     "updated": 1739624420688,
+     "downloads": 295104,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "642"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9140",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1739710820688,
+     "downloads": 73776,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "3.9",
+     "monthly": 138,
+     "favorites": 550
+    }
+   ]
   },
   {
-   "id": "9141",
+   "key": "wowinterface:9141",
    "name": "Silent Bars",
    "author": "Author 40",
    "category": "Unit Mods",
-   "version": "4.0",
-   "updated": 1777726820688,
-   "downloads": 23055,
-   "monthly": 28,
-   "favorites": 66,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9141",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1777726820688,
+     "downloads": 23055,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "4.0",
+     "monthly": 28,
+     "favorites": 66
+    }
+   ]
   },
   {
-   "id": "9142",
+   "key": "wowinterface:9142",
    "name": "Silent Chat",
    "author": "Author 41",
    "category": "Chat Mods",
-   "version": "4.1",
-   "updated": 1773147620688,
-   "downloads": 30740,
-   "monthly": 41,
-   "favorites": 132,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9142",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1773147620688,
+     "downloads": 30740,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "4.1",
+     "monthly": 41,
+     "favorites": 132
+    }
+   ]
   },
   {
-   "id": "9143",
+   "key": "wowinterface:9143",
    "name": "Silent Maps",
    "author": "Author 42",
    "category": "Libraries",
-   "version": "4.2",
-   "updated": 1768568420688,
-   "downloads": 38425,
-   "monthly": 54,
-   "favorites": 198,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "silent-maps",
+     "url": "https://www.curseforge.com/wow/addons/silent-maps",
+     "updated": 1768482020688,
+     "downloads": 153700,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "645"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9143",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1768568420688,
+     "downloads": 38425,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "4.2",
+     "monthly": 54,
+     "favorites": 198
+    }
+   ]
   },
   {
-   "id": "9144",
+   "key": "wowinterface:9144",
    "name": "Silent Loot",
    "author": "Author 43",
    "category": "Classic - General",
-   "version": "4.3",
-   "updated": 1763989220688,
-   "downloads": 46110,
-   "monthly": 67,
-   "favorites": 264,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9144",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1763989220688,
+     "downloads": 46110,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "4.3",
+     "monthly": 67,
+     "favorites": 264
+    }
+   ]
   },
   {
-   "id": "9145",
+   "key": "wowinterface:9145",
    "name": "Silent Frames",
    "author": "Author 44",
    "category": "Action Bar Mods",
-   "version": "4.4",
-   "updated": 1759410020688,
-   "downloads": 53795,
-   "monthly": 80,
-   "favorites": 330,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9145",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1759410020688,
+     "downloads": 53795,
+     "gameVersions": [],
+     "version": "4.4",
+     "monthly": 80,
+     "favorites": 330
+    }
+   ]
   },
   {
-   "id": "9146",
+   "key": "wowinterface:9146",
    "name": "Silent Timers",
    "author": "Author 45",
    "category": "Auction House & Vendors",
-   "version": "4.5",
-   "updated": 1754830820688,
-   "downloads": 61480,
-   "monthly": 93,
-   "favorites": 396,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "silent-timers",
+     "url": "https://www.curseforge.com/wow/addons/silent-timers",
+     "updated": 1754744420688,
+     "downloads": 245920,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "648"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9146",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1754830820688,
+     "downloads": 61480,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "4.5",
+     "monthly": 93,
+     "favorites": 396
+    }
+   ]
   },
   {
-   "id": "9147",
+   "key": "wowinterface:9147",
    "name": "Silent Mail",
    "author": "Author 46",
    "category": "Bags, Bank, Inventory",
-   "version": "4.6",
-   "updated": 1750251620688,
-   "downloads": 69165,
-   "monthly": 106,
-   "favorites": 462,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9147",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1750251620688,
+     "downloads": 69165,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "4.6",
+     "monthly": 106,
+     "favorites": 462
+    }
+   ]
   },
   {
-   "id": "9148",
+   "key": "wowinterface:9148",
    "name": "Silent Tooltips",
    "author": "Author 47",
    "category": "Map, Coords, Compasses",
-   "version": "4.7",
-   "updated": 1745672420688,
-   "downloads": 76850,
-   "monthly": 119,
-   "favorites": 528,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9148",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1745672420688,
+     "downloads": 76850,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "4.7",
+     "monthly": 119,
+     "favorites": 528
+    }
+   ]
   },
   {
-   "id": "9149",
+   "key": "wowinterface:9149",
    "name": "Silent Vendor",
    "author": "Author 48",
    "category": "Unit Mods",
-   "version": "4.8",
-   "updated": 1741093220688,
-   "downloads": 84535,
-   "monthly": 132,
-   "favorites": 594,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "silent-vendor",
+     "url": "https://www.curseforge.com/wow/addons/silent-vendor",
+     "updated": 1741006820688,
+     "downloads": 338140,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "651"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9149",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1741093220688,
+     "downloads": 84535,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "4.8",
+     "monthly": 132,
+     "favorites": 594
+    }
+   ]
   },
   {
-   "id": "9150",
+   "key": "wowinterface:9150",
    "name": "Silent Bags",
    "author": "Author 49",
    "category": "Chat Mods",
-   "version": "4.9",
-   "updated": 1736514020688,
-   "downloads": 92220,
-   "monthly": 145,
-   "favorites": 660,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "SilentBags"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9150",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1736514020688,
+     "downloads": 92220,
+     "gameVersions": [],
+     "version": "4.9",
+     "monthly": 145,
+     "favorites": 660
+    }
+   ]
   },
   {
-   "id": "9151",
+   "key": "wowinterface:9151",
    "name": "Grand Bars",
    "author": "Author 50",
    "category": "Chat Mods",
-   "version": "5.0",
-   "updated": 1774530020688,
-   "downloads": 27666,
-   "monthly": 35,
-   "favorites": 77,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9151",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1774530020688,
+     "downloads": 27666,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "5.0",
+     "monthly": 35,
+     "favorites": 77
+    }
+   ]
   },
   {
-   "id": "9152",
+   "key": "wowinterface:9152",
    "name": "Grand Chat",
    "author": "Author 51",
    "category": "Libraries",
-   "version": "5.1",
-   "updated": 1769950820688,
-   "downloads": 36888,
-   "monthly": 48,
-   "favorites": 154,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "grand-chat",
+     "url": "https://www.curseforge.com/wow/addons/grand-chat",
+     "updated": 1769864420688,
+     "downloads": 147552,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "654"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9152",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1769950820688,
+     "downloads": 36888,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "5.1",
+     "monthly": 48,
+     "favorites": 154
+    }
+   ]
   },
   {
-   "id": "9153",
+   "key": "wowinterface:9153",
    "name": "Grand Maps",
    "author": "Author 52",
    "category": "Classic - General",
-   "version": "5.2",
-   "updated": 1765371620688,
-   "downloads": 46110,
-   "monthly": 61,
-   "favorites": 231,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9153",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1765371620688,
+     "downloads": 46110,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "5.2",
+     "monthly": 61,
+     "favorites": 231
+    }
+   ]
   },
   {
-   "id": "9154",
+   "key": "wowinterface:9154",
    "name": "Grand Loot",
    "author": "Author 53",
    "category": "Action Bar Mods",
-   "version": "5.3",
-   "updated": 1760792420688,
-   "downloads": 55332,
-   "monthly": 74,
-   "favorites": 308,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9154",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1760792420688,
+     "downloads": 55332,
+     "gameVersions": [],
+     "version": "5.3",
+     "monthly": 74,
+     "favorites": 308
+    }
+   ]
   },
   {
-   "id": "9155",
+   "key": "wowinterface:9155",
    "name": "Grand Frames",
    "author": "Author 54",
    "category": "Auction House & Vendors",
-   "version": "5.4",
-   "updated": 1756213220688,
-   "downloads": 64554,
-   "monthly": 87,
-   "favorites": 385,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "grand-frames",
+     "url": "https://www.curseforge.com/wow/addons/grand-frames",
+     "updated": 1756126820688,
+     "downloads": 258216,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "657"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9155",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1756213220688,
+     "downloads": 64554,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "5.4",
+     "monthly": 87,
+     "favorites": 385
+    }
+   ]
   },
   {
-   "id": "9156",
+   "key": "wowinterface:9156",
    "name": "Grand Timers",
    "author": "Author 55",
    "category": "Bags, Bank, Inventory",
-   "version": "5.5",
-   "updated": 1751634020688,
-   "downloads": 73776,
-   "monthly": 100,
-   "favorites": 462,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9156",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1751634020688,
+     "downloads": 73776,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "5.5",
+     "monthly": 100,
+     "favorites": 462
+    }
+   ]
   },
   {
-   "id": "9157",
+   "key": "wowinterface:9157",
    "name": "Grand Mail",
    "author": "Author 56",
    "category": "Map, Coords, Compasses",
-   "version": "5.6",
-   "updated": 1747054820688,
-   "downloads": 82998,
-   "monthly": 113,
-   "favorites": 539,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9157",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1747054820688,
+     "downloads": 82998,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "5.6",
+     "monthly": 113,
+     "favorites": 539
+    }
+   ]
   },
   {
-   "id": "9158",
+   "key": "wowinterface:9158",
    "name": "Grand Tooltips",
    "author": "Author 57",
    "category": "Unit Mods",
-   "version": "5.7",
-   "updated": 1742475620688,
-   "downloads": 92220,
-   "monthly": 126,
-   "favorites": 616,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "grand-tooltips",
+     "url": "https://www.curseforge.com/wow/addons/grand-tooltips",
+     "updated": 1742389220688,
+     "downloads": 368880,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "660"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9158",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1742475620688,
+     "downloads": 92220,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "5.7",
+     "monthly": 126,
+     "favorites": 616
+    }
+   ]
   },
   {
-   "id": "9159",
+   "key": "wowinterface:9159",
    "name": "Grand Vendor",
    "author": "Author 58",
    "category": "Chat Mods",
-   "version": "5.8",
-   "updated": 1737896420688,
-   "downloads": 101442,
-   "monthly": 139,
-   "favorites": 693,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9159",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1737896420688,
+     "downloads": 101442,
+     "gameVersions": [],
+     "version": "5.8",
+     "monthly": 139,
+     "favorites": 693
+    }
+   ]
   },
   {
-   "id": "9160",
+   "key": "wowinterface:9160",
    "name": "Grand Bags",
    "author": "Author 59",
    "category": "Libraries",
-   "version": "5.9",
-   "updated": 1733317220688,
-   "downloads": 110664,
-   "monthly": 152,
-   "favorites": 770,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "GrandBags"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9160",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1733317220688,
+     "downloads": 110664,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "5.9",
+     "monthly": 152,
+     "favorites": 770
+    }
+   ]
   },
   {
-   "id": "9161",
+   "key": "wowinterface:9161",
    "name": "Lucky Bars",
    "author": "Author 60",
    "category": "Libraries",
-   "version": "6.0",
-   "updated": 1771333220688,
-   "downloads": 32277,
-   "monthly": 42,
-   "favorites": 88,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "lucky-bars",
+     "url": "https://www.curseforge.com/wow/addons/lucky-bars",
+     "updated": 1771246820688,
+     "downloads": 129108,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "663"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9161",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1771333220688,
+     "downloads": 32277,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "6.0",
+     "monthly": 42,
+     "favorites": 88
+    }
+   ]
   },
   {
-   "id": "9162",
+   "key": "wowinterface:9162",
    "name": "Lucky Chat",
    "author": "Author 61",
    "category": "Classic - General",
-   "version": "6.1",
-   "updated": 1766754020688,
-   "downloads": 43036,
-   "monthly": 55,
-   "favorites": 176,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9162",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1766754020688,
+     "downloads": 43036,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "6.1",
+     "monthly": 55,
+     "favorites": 176
+    }
+   ]
   },
   {
-   "id": "9163",
+   "key": "wowinterface:9163",
    "name": "Lucky Maps",
    "author": "Author 62",
    "category": "Action Bar Mods",
-   "version": "6.2",
-   "updated": 1762174820688,
-   "downloads": 53795,
-   "monthly": 68,
-   "favorites": 264,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9163",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1762174820688,
+     "downloads": 53795,
+     "gameVersions": [],
+     "version": "6.2",
+     "monthly": 68,
+     "favorites": 264
+    }
+   ]
   },
   {
-   "id": "9164",
+   "key": "wowinterface:9164",
    "name": "Lucky Loot",
    "author": "Author 63",
    "category": "Auction House & Vendors",
-   "version": "6.3",
-   "updated": 1757595620688,
-   "downloads": 64554,
-   "monthly": 81,
-   "favorites": 352,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "lucky-loot",
+     "url": "https://www.curseforge.com/wow/addons/lucky-loot",
+     "updated": 1757509220688,
+     "downloads": 258216,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "666"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9164",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1757595620688,
+     "downloads": 64554,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "6.3",
+     "monthly": 81,
+     "favorites": 352
+    }
+   ]
   },
   {
-   "id": "9165",
+   "key": "wowinterface:9165",
    "name": "Lucky Frames",
    "author": "Author 64",
    "category": "Bags, Bank, Inventory",
-   "version": "6.4",
-   "updated": 1753016420688,
-   "downloads": 75313,
-   "monthly": 94,
-   "favorites": 440,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9165",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1753016420688,
+     "downloads": 75313,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "6.4",
+     "monthly": 94,
+     "favorites": 440
+    }
+   ]
   },
   {
-   "id": "9166",
+   "key": "wowinterface:9166",
    "name": "Lucky Timers",
    "author": "Author 65",
    "category": "Map, Coords, Compasses",
-   "version": "6.5",
-   "updated": 1748437220688,
-   "downloads": 86072,
-   "monthly": 107,
-   "favorites": 528,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9166",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1748437220688,
+     "downloads": 86072,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "6.5",
+     "monthly": 107,
+     "favorites": 528
+    }
+   ]
   },
   {
-   "id": "9167",
+   "key": "wowinterface:9167",
    "name": "Lucky Mail",
    "author": "Author 66",
    "category": "Unit Mods",
-   "version": "6.6",
-   "updated": 1743858020688,
-   "downloads": 96831,
-   "monthly": 120,
-   "favorites": 616,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "lucky-mail",
+     "url": "https://www.curseforge.com/wow/addons/lucky-mail",
+     "updated": 1743771620688,
+     "downloads": 387324,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "669"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9167",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1743858020688,
+     "downloads": 96831,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "6.6",
+     "monthly": 120,
+     "favorites": 616
+    }
+   ]
   },
   {
-   "id": "9168",
+   "key": "wowinterface:9168",
    "name": "Lucky Tooltips",
    "author": "Author 67",
    "category": "Chat Mods",
-   "version": "6.7",
-   "updated": 1739278820688,
-   "downloads": 107590,
-   "monthly": 133,
-   "favorites": 704,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9168",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1739278820688,
+     "downloads": 107590,
+     "gameVersions": [],
+     "version": "6.7",
+     "monthly": 133,
+     "favorites": 704
+    }
+   ]
   },
   {
-   "id": "9169",
+   "key": "wowinterface:9169",
    "name": "Lucky Vendor",
    "author": "Author 68",
    "category": "Libraries",
-   "version": "6.8",
-   "updated": 1734699620688,
-   "downloads": 118349,
-   "monthly": 146,
-   "favorites": 792,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9169",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1734699620688,
+     "downloads": 118349,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "6.8",
+     "monthly": 146,
+     "favorites": 792
+    }
+   ]
   },
   {
-   "id": "9170",
+   "key": "wowinterface:9170",
    "name": "Lucky Bags",
    "author": "Author 69",
    "category": "Classic - General",
-   "version": "6.9",
-   "updated": 1730120420688,
-   "downloads": 129108,
-   "monthly": 159,
-   "favorites": 880,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "LuckyBags"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "lucky-bags",
+     "url": "https://www.curseforge.com/wow/addons/lucky-bags",
+     "updated": 1730034020688,
+     "downloads": 516432,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "672"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9170",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1730120420688,
+     "downloads": 129108,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "6.9",
+     "monthly": 159,
+     "favorites": 880
+    }
+   ]
   },
   {
-   "id": "9171",
+   "key": "wowinterface:9171",
    "name": "Iron Bars",
    "author": "Author 70",
    "category": "Classic - General",
-   "version": "7.0",
-   "updated": 1768136420688,
-   "downloads": 36888,
-   "monthly": 49,
-   "favorites": 99,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9171",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1768136420688,
+     "downloads": 36888,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "7.0",
+     "monthly": 49,
+     "favorites": 99
+    }
+   ]
   },
   {
-   "id": "9172",
+   "key": "wowinterface:9172",
    "name": "Iron Chat",
    "author": "Author 71",
    "category": "Action Bar Mods",
-   "version": "7.1",
-   "updated": 1763557220688,
-   "downloads": 49184,
-   "monthly": 62,
-   "favorites": 198,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9172",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1763557220688,
+     "downloads": 49184,
+     "gameVersions": [],
+     "version": "7.1",
+     "monthly": 62,
+     "favorites": 198
+    }
+   ]
   },
   {
-   "id": "9173",
+   "key": "wowinterface:9173",
    "name": "Iron Maps",
    "author": "Author 72",
    "category": "Auction House & Vendors",
-   "version": "7.2",
-   "updated": 1758978020688,
-   "downloads": 61480,
-   "monthly": 75,
-   "favorites": 297,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "iron-maps",
+     "url": "https://www.curseforge.com/wow/addons/iron-maps",
+     "updated": 1758891620688,
+     "downloads": 245920,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "675"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9173",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1758978020688,
+     "downloads": 61480,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "7.2",
+     "monthly": 75,
+     "favorites": 297
+    }
+   ]
   },
   {
-   "id": "9174",
+   "key": "wowinterface:9174",
    "name": "Iron Loot",
    "author": "Author 73",
    "category": "Bags, Bank, Inventory",
-   "version": "7.3",
-   "updated": 1754398820688,
-   "downloads": 73776,
-   "monthly": 88,
-   "favorites": 396,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9174",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1754398820688,
+     "downloads": 73776,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "7.3",
+     "monthly": 88,
+     "favorites": 396
+    }
+   ]
   },
   {
-   "id": "9175",
+   "key": "wowinterface:9175",
    "name": "Iron Frames",
    "author": "Author 74",
    "category": "Map, Coords, Compasses",
-   "version": "7.4",
-   "updated": 1749819620688,
-   "downloads": 86072,
-   "monthly": 101,
-   "favorites": 495,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9175",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1749819620688,
+     "downloads": 86072,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "7.4",
+     "monthly": 101,
+     "favorites": 495
+    }
+   ]
   },
   {
-   "id": "9176",
+   "key": "wowinterface:9176",
    "name": "Iron Timers",
    "author": "Author 75",
    "category": "Unit Mods",
-   "version": "7.5",
-   "updated": 1745240420688,
-   "downloads": 98368,
-   "monthly": 114,
-   "favorites": 594,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "iron-timers",
+     "url": "https://www.curseforge.com/wow/addons/iron-timers",
+     "updated": 1745154020688,
+     "downloads": 393472,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "678"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9176",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1745240420688,
+     "downloads": 98368,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "7.5",
+     "monthly": 114,
+     "favorites": 594
+    }
+   ]
   },
   {
-   "id": "9177",
+   "key": "wowinterface:9177",
    "name": "Iron Mail",
    "author": "Author 76",
    "category": "Chat Mods",
-   "version": "7.6",
-   "updated": 1740661220688,
-   "downloads": 110664,
-   "monthly": 127,
-   "favorites": 693,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9177",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1740661220688,
+     "downloads": 110664,
+     "gameVersions": [],
+     "version": "7.6",
+     "monthly": 127,
+     "favorites": 693
+    }
+   ]
   },
   {
-   "id": "9178",
+   "key": "wowinterface:9178",
    "name": "Iron Tooltips",
    "author": "Author 77",
    "category": "Libraries",
-   "version": "7.7",
-   "updated": 1736082020688,
-   "downloads": 122960,
-   "monthly": 140,
-   "favorites": 792,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9178",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1736082020688,
+     "downloads": 122960,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "7.7",
+     "monthly": 140,
+     "favorites": 792
+    }
+   ]
   },
   {
-   "id": "9179",
+   "key": "wowinterface:9179",
    "name": "Iron Vendor",
    "author": "Author 78",
    "category": "Classic - General",
-   "version": "7.8",
-   "updated": 1731502820688,
-   "downloads": 135256,
-   "monthly": 153,
-   "favorites": 891,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "iron-vendor",
+     "url": "https://www.curseforge.com/wow/addons/iron-vendor",
+     "updated": 1731416420688,
+     "downloads": 541024,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "681"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9179",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1731502820688,
+     "downloads": 135256,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "7.8",
+     "monthly": 153,
+     "favorites": 891
+    }
+   ]
   },
   {
-   "id": "9180",
+   "key": "wowinterface:9180",
    "name": "Iron Bags",
    "author": "Author 79",
    "category": "Action Bar Mods",
-   "version": "7.9",
-   "updated": 1726923620688,
-   "downloads": 147552,
-   "monthly": 166,
-   "favorites": 990,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "IronBags"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9180",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1726923620688,
+     "downloads": 147552,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "7.9",
+     "monthly": 166,
+     "favorites": 990
+    }
+   ]
   },
   {
-   "id": "9181",
+   "key": "wowinterface:9181",
    "name": "Mystic Bars",
    "author": "Author 80",
    "category": "Action Bar Mods",
-   "version": "8.0",
-   "updated": 1764939620688,
-   "downloads": 41499,
-   "monthly": 56,
-   "favorites": 110,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9181",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1764939620688,
+     "downloads": 41499,
+     "gameVersions": [],
+     "version": "8.0",
+     "monthly": 56,
+     "favorites": 110
+    }
+   ]
   },
   {
-   "id": "9182",
+   "key": "wowinterface:9182",
    "name": "Mystic Chat",
    "author": "Author 81",
    "category": "Auction House & Vendors",
-   "version": "8.1",
-   "updated": 1760360420688,
-   "downloads": 55332,
-   "monthly": 69,
-   "favorites": 220,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "mystic-chat",
+     "url": "https://www.curseforge.com/wow/addons/mystic-chat",
+     "updated": 1760274020688,
+     "downloads": 221328,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "684"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9182",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1760360420688,
+     "downloads": 55332,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "8.1",
+     "monthly": 69,
+     "favorites": 220
+    }
+   ]
   },
   {
-   "id": "9183",
+   "key": "wowinterface:9183",
    "name": "Mystic Maps",
    "author": "Author 82",
    "category": "Bags, Bank, Inventory",
-   "version": "8.2",
-   "updated": 1755781220688,
-   "downloads": 69165,
-   "monthly": 82,
-   "favorites": 330,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9183",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1755781220688,
+     "downloads": 69165,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "8.2",
+     "monthly": 82,
+     "favorites": 330
+    }
+   ]
   },
   {
-   "id": "9184",
+   "key": "wowinterface:9184",
    "name": "Mystic Loot",
    "author": "Author 83",
    "category": "Map, Coords, Compasses",
-   "version": "8.3",
-   "updated": 1751202020688,
-   "downloads": 82998,
-   "monthly": 95,
-   "favorites": 440,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9184",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1751202020688,
+     "downloads": 82998,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "8.3",
+     "monthly": 95,
+     "favorites": 440
+    }
+   ]
   },
   {
-   "id": "9185",
+   "key": "wowinterface:9185",
    "name": "Mystic Frames",
    "author": "Author 84",
    "category": "Unit Mods",
-   "version": "8.4",
-   "updated": 1746622820688,
-   "downloads": 96831,
-   "monthly": 108,
-   "favorites": 550,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "mystic-frames",
+     "url": "https://www.curseforge.com/wow/addons/mystic-frames",
+     "updated": 1746536420688,
+     "downloads": 387324,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "687"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9185",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1746622820688,
+     "downloads": 96831,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "8.4",
+     "monthly": 108,
+     "favorites": 550
+    }
+   ]
   },
   {
-   "id": "9186",
+   "key": "wowinterface:9186",
    "name": "Mystic Timers",
    "author": "Author 85",
    "category": "Chat Mods",
-   "version": "8.5",
-   "updated": 1742043620688,
-   "downloads": 110664,
-   "monthly": 121,
-   "favorites": 660,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9186",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1742043620688,
+     "downloads": 110664,
+     "gameVersions": [],
+     "version": "8.5",
+     "monthly": 121,
+     "favorites": 660
+    }
+   ]
   },
   {
-   "id": "9187",
+   "key": "wowinterface:9187",
    "name": "Mystic Mail",
    "author": "Author 86",
    "category": "Libraries",
-   "version": "8.6",
-   "updated": 1737464420688,
-   "downloads": 124497,
-   "monthly": 134,
-   "favorites": 770,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9187",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1737464420688,
+     "downloads": 124497,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "8.6",
+     "monthly": 134,
+     "favorites": 770
+    }
+   ]
   },
   {
-   "id": "9188",
+   "key": "wowinterface:9188",
    "name": "Mystic Tooltips",
    "author": "Author 87",
    "category": "Classic - General",
-   "version": "8.7",
-   "updated": 1732885220688,
-   "downloads": 138330,
-   "monthly": 147,
-   "favorites": 880,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "mystic-tooltips",
+     "url": "https://www.curseforge.com/wow/addons/mystic-tooltips",
+     "updated": 1732798820688,
+     "downloads": 553320,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "690"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9188",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1732885220688,
+     "downloads": 138330,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "8.7",
+     "monthly": 147,
+     "favorites": 880
+    }
+   ]
   },
   {
-   "id": "9189",
+   "key": "wowinterface:9189",
    "name": "Mystic Vendor",
    "author": "Author 88",
    "category": "Action Bar Mods",
-   "version": "8.8",
-   "updated": 1728306020688,
-   "downloads": 152163,
-   "monthly": 160,
-   "favorites": 990,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9189",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1728306020688,
+     "downloads": 152163,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "8.8",
+     "monthly": 160,
+     "favorites": 990
+    }
+   ]
   },
   {
-   "id": "9190",
+   "key": "wowinterface:9190",
    "name": "Mystic Bags",
    "author": "Author 89",
    "category": "Auction House & Vendors",
-   "version": "8.9",
-   "updated": 1723726820688,
-   "downloads": 165996,
-   "monthly": 173,
-   "favorites": 1100,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "MysticBags"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9190",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1723726820688,
+     "downloads": 165996,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "8.9",
+     "monthly": 173,
+     "favorites": 1100
+    }
+   ]
   },
   {
-   "id": "9191",
+   "key": "wowinterface:9191",
    "name": "Clever Bars",
    "author": "Author 90",
    "category": "Auction House & Vendors",
-   "version": "9.0",
-   "updated": 1761742820688,
-   "downloads": 46110,
-   "monthly": 63,
-   "favorites": 121,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverBars"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "clever-bars",
+     "url": "https://www.curseforge.com/wow/addons/clever-bars",
+     "updated": 1761656420688,
+     "downloads": 184440,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "693"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9191",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1761742820688,
+     "downloads": 46110,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "9.0",
+     "monthly": 63,
+     "favorites": 121
+    }
+   ]
   },
   {
-   "id": "9192",
+   "key": "wowinterface:9192",
    "name": "Clever Chat",
    "author": "Author 91",
    "category": "Bags, Bank, Inventory",
-   "version": "9.1",
-   "updated": 1757163620688,
-   "downloads": 61480,
-   "monthly": 76,
-   "favorites": 242,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverChat"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9192",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1757163620688,
+     "downloads": 61480,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "9.1",
+     "monthly": 76,
+     "favorites": 242
+    }
+   ]
   },
   {
-   "id": "9193",
+   "key": "wowinterface:9193",
    "name": "Clever Maps",
    "author": "Author 92",
    "category": "Map, Coords, Compasses",
-   "version": "9.2",
-   "updated": 1752584420688,
-   "downloads": 76850,
-   "monthly": 89,
-   "favorites": 363,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverMaps"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9193",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1752584420688,
+     "downloads": 76850,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "9.2",
+     "monthly": 89,
+     "favorites": 363
+    }
+   ]
   },
   {
-   "id": "9194",
+   "key": "wowinterface:9194",
    "name": "Clever Loot",
    "author": "Author 93",
    "category": "Unit Mods",
-   "version": "9.3",
-   "updated": 1748005220688,
-   "downloads": 92220,
-   "monthly": 102,
-   "favorites": 484,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverLoot"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "clever-loot",
+     "url": "https://www.curseforge.com/wow/addons/clever-loot",
+     "updated": 1747918820688,
+     "downloads": 368880,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "696"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9194",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1748005220688,
+     "downloads": 92220,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "9.3",
+     "monthly": 102,
+     "favorites": 484
+    }
+   ]
   },
   {
-   "id": "9195",
+   "key": "wowinterface:9195",
    "name": "Clever Frames",
    "author": "Author 94",
    "category": "Chat Mods",
-   "version": "9.4",
-   "updated": 1743426020688,
-   "downloads": 107590,
-   "monthly": 115,
-   "favorites": 605,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverFrames"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9195",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1743426020688,
+     "downloads": 107590,
+     "gameVersions": [],
+     "version": "9.4",
+     "monthly": 115,
+     "favorites": 605
+    }
+   ]
   },
   {
-   "id": "9196",
+   "key": "wowinterface:9196",
    "name": "Clever Timers",
    "author": "Author 95",
    "category": "Libraries",
-   "version": "9.5",
-   "updated": 1738846820688,
-   "downloads": 122960,
-   "monthly": 128,
-   "favorites": 726,
-   "gameVersions": [
-    "2.5.4"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverTimers"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9196",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1738846820688,
+     "downloads": 122960,
+     "gameVersions": [
+      "2.5.4"
+     ],
+     "version": "9.5",
+     "monthly": 128,
+     "favorites": 726
+    }
+   ]
   },
   {
-   "id": "9197",
+   "key": "wowinterface:9197",
    "name": "Clever Mail",
    "author": "Author 96",
    "category": "Classic - General",
-   "version": "9.6",
-   "updated": 1734267620688,
-   "downloads": 138330,
-   "monthly": 141,
-   "favorites": 847,
-   "gameVersions": [
-    "1.15.7"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverMail"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "clever-mail",
+     "url": "https://www.curseforge.com/wow/addons/clever-mail",
+     "updated": 1734181220688,
+     "downloads": 553320,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "699"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9197",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1734267620688,
+     "downloads": 138330,
+     "gameVersions": [
+      "1.15.7"
+     ],
+     "version": "9.6",
+     "monthly": 141,
+     "favorites": 847
+    }
+   ]
   },
   {
-   "id": "9198",
+   "key": "wowinterface:9198",
    "name": "Clever Tooltips",
    "author": "Author 97",
    "category": "Action Bar Mods",
-   "version": "9.7",
-   "updated": 1729688420688,
-   "downloads": 153700,
-   "monthly": 154,
-   "favorites": 968,
-   "gameVersions": [
-    "12.1.0"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverTooltips"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9198",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1729688420688,
+     "downloads": 153700,
+     "gameVersions": [
+      "12.1.0"
+     ],
+     "version": "9.7",
+     "monthly": 154,
+     "favorites": 968
+    }
+   ]
   },
   {
-   "id": "9199",
+   "key": "wowinterface:9199",
    "name": "Clever Vendor",
    "author": "Author 98",
    "category": "Auction House & Vendors",
-   "version": "9.8",
-   "updated": 1725109220688,
-   "downloads": 169070,
-   "monthly": 167,
-   "favorites": 1089,
-   "gameVersions": [
-    "1.15.7",
-    "4.4.2"
-   ],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverVendor"
    ],
-   "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "sources": [
+    {
+     "source": "wowinterface",
+     "id": "9199",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1725109220688,
+     "downloads": 169070,
+     "gameVersions": [
+      "1.15.7",
+      "4.4.2"
+     ],
+     "version": "9.8",
+     "monthly": 167,
+     "favorites": 1089
+    }
+   ]
   },
   {
-   "id": "9200",
+   "key": "wowinterface:9200",
    "name": "Clever Bags",
    "author": "Author 99",
    "category": "Bags, Bank, Inventory",
-   "version": "9.9",
-   "updated": 1720530020688,
-   "downloads": 184440,
-   "monthly": 180,
-   "favorites": 1210,
-   "gameVersions": [],
+   "thumb": "",
+   "summary": "",
    "dirs": [
     "CleverBags"
    ],
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "clever-bags",
+     "url": "https://www.curseforge.com/wow/addons/clever-bags",
+     "updated": 1720443620688,
+     "downloads": 737760,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "702"
+    },
+    {
+     "source": "wowinterface",
+     "id": "9200",
+     "url": "https://www.wowinterface.com/",
+     "updated": 1720530020688,
+     "downloads": 184440,
+     "gameVersions": [],
+     "version": "9.9",
+     "monthly": 180,
+     "favorites": 1210
+    }
+   ]
+  },
+  {
+   "key": "curseforge:trade-ledger",
+   "name": "Trade Ledger",
+   "author": "",
+   "category": "",
    "thumb": "",
-   "url": "https://www.wowinterface.com/"
+   "summary": "",
+   "dirs": [
+    "TradeLedger"
+   ],
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "trade-ledger",
+     "url": "https://www.curseforge.com/wow/addons/trade-ledger",
+     "updated": 1789998325412,
+     "downloads": 9800000,
+     "flavours": [
+      "vanilla_classic",
+      "forever_classic"
+     ],
+     "numericId": "700"
+    }
+   ]
+  },
+  {
+   "key": "curseforge:forge-timers",
+   "name": "Forge Timers",
+   "author": "",
+   "category": "",
+   "thumb": "",
+   "summary": "",
+   "dirs": [
+    "ForgeTimers"
+   ],
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "forge-timers",
+     "url": "https://www.curseforge.com/wow/addons/forge-timers",
+     "updated": 1788788725412,
+     "downloads": 300000,
+     "flavours": [
+      "vanilla_classic"
+     ],
+     "numericId": "800"
+    }
+   ]
+  },
+  {
+   "key": "curseforge:retail-only-meter",
+   "name": "Retail Only Meter",
+   "author": "",
+   "category": "",
+   "thumb": "",
+   "summary": "",
+   "dirs": [
+    "RetailOnlyMeter"
+   ],
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "retail-only-meter",
+     "url": "https://www.curseforge.com/wow/addons/retail-only-meter",
+     "updated": 1787060725412,
+     "downloads": 600000,
+     "flavours": [
+      "mainline"
+     ],
+     "numericId": "801"
+    }
+   ]
+  },
+  {
+   "key": "curseforge:cozy-nameplates",
+   "name": "Cozy Nameplates",
+   "author": "",
+   "category": "",
+   "thumb": "",
+   "summary": "",
+   "dirs": [
+    "CozyNameplates"
+   ],
+   "sources": [
+    {
+     "source": "curseforge",
+     "id": "cozy-nameplates",
+     "url": "https://www.curseforge.com/wow/addons/cozy-nameplates",
+     "updated": 1785332725412,
+     "downloads": 900000,
+     "flavours": [
+      "vanilla_classic",
+      "mainline"
+     ],
+     "numericId": "802"
+    }
+   ]
+  },
+  {
+   "key": "tukui:elvui-demo",
+   "name": "Example UI Suite",
+   "author": "Example",
+   "category": "",
+   "thumb": "",
+   "summary": "A full UI replacement.",
+   "dirs": [
+    "ExampleUI",
+    "ExampleUI_Options"
+   ],
+   "sources": [
+    {
+     "source": "tukui",
+     "id": "elvui-demo",
+     "url": "https://tukui.org",
+     "updated": 1787924725412,
+     "downloads": 0,
+     "gameVersions": [
+      "12.1.0",
+      "1.15.9"
+     ],
+     "version": "15.0"
+    }
+   ]
   }
  ],
  "details": {
-  "9001": {
+  "wowinterface:9001": {
    "id": "9001",
    "name": "Quest Compass",
    "version": "2.5.0",
@@ -2207,7 +3440,8 @@
    "download": "",
    "md5": "",
    "author": "Example Author",
-   "pending": false
+   "pending": false,
+   "source": "wowinterface"
   }
  },
  "downloads": [
@@ -2215,5 +3449,25 @@
    "name": "SomeAddon-1.2.zip",
    "path": "/tmp/demo/Downloads/SomeAddon-1.2.zip"
   }
- ]
+ ],
+ "catalogInfo": {
+  "count": 108,
+  "sources": {
+   "curseforge": {
+    "count": 9,
+    "fetchedAt": 0,
+    "error": ""
+   },
+   "wowinterface": {
+    "count": 103,
+    "fetchedAt": 0,
+    "error": ""
+   },
+   "tukui": {
+    "count": 1,
+    "fetchedAt": 0,
+    "error": "offline"
+   }
+  }
+ }
 }

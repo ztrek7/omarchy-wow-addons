@@ -43,6 +43,19 @@ Scope {
     readonly property var updateIds: addons.filter(a => checks[a.id]?.state === "available").map(a => a.id)
     readonly property int enabledCount: addons.filter(a => a.state !== "disabled").length
     readonly property int outOfDateCount: addons.filter(a => a.outOfDate).length
+    // Browse sources the user has turned on; saved to the config file.
+    property var sourceOn: ({curseforge: true, wowinterface: true, tukui: true})
+    // "source:id" -> installed addon id, from install records and TOC-declared sources.
+    readonly property var installedKeys: {
+        let keys = {}
+        let prefixes = {wowi: "wowinterface"}
+        addons.forEach(a => {
+            let [prefix, ...rest] = a.id.split(":")
+            keys[(prefixes[prefix] || prefix) + ":" + rest.join(":").toLowerCase()] = a.id
+            a.links.forEach(l => keys[l.source + ":" + String(l.id).toLowerCase()] = a.id)
+        })
+        return keys
+    }
     // Folder name -> addon id, so the catalog can tell what's already on disk.
     readonly property var folderOwners: {
         let owners = {}
@@ -60,7 +73,7 @@ Scope {
     function versionText(v) { return !v ? "" : /^\d/.test(v) ? "v" + v : v }
     function monthYear(ms) { return ms ? new Date(ms).toLocaleDateString(Qt.locale(), "MMM yyyy") : "unknown" }
     function sourceName(source) {
-        return ({wowinterface: "WoWInterface", curseforge: "CurseForge", github: "GitHub", url: "Zip link", file: "Zip file", manual: "Manual install"})[source] || source
+        return ({wowinterface: "WoWInterface", curseforge: "CurseForge", tukui: "Tukui", wago: "Wago", github: "GitHub", url: "Zip link", file: "Zip file", manual: "Manual install"})[source] || source
     }
 
     function log(message, error) {
@@ -100,15 +113,32 @@ Scope {
         execute({action: "update", ids: ids, sources: preferred})
     }
     function toggle(addon) { execute({action: addon.state === "enabled" ? "disable" : "enable", id: addon.id}) }
-    function installEntry(entry) {
-        let clashes = entry.dirs.filter(d => folderOwners[d] && folderOwners[d] !== "wowi:" + entry.id)
-        if (clashes.length) confirm("replace", Object.assign({clashes: clashes}, entry))
-        else execute({action: "install", source: "wowinterface", id: entry.id})
+    function installedRowFor(entry) {
+        for (let r of entry.sources) {
+            let row = installedKeys[r.source + ":" + String(r.id).toLowerCase()] || (r.numericId && installedKeys[r.source + ":" + r.numericId])
+            if (row) return row
+        }
+        return ""
     }
     function entryState(entry) {
-        let id = "wowi:" + entry.id
-        if (addons.some(a => a.id === id)) return checks[id]?.state === "available" ? "update" : "installed"
+        let row = installedRowFor(entry)
+        if (row) return checks[row]?.state === "available" ? "update" : "installed"
         return entry.dirs.some(d => folderOwners[d]) ? "replace" : "install"
+    }
+    function installEntry(entry, ref) {
+        if (!ref) return
+        let row = installedRowFor(entry)
+        let clashes = entry.dirs.filter(d => folderOwners[d] && folderOwners[d] !== row)
+        if (clashes.length) confirm("replace", {name: entry.name, clashes: clashes, ref: ref})
+        else execute({action: "install", source: ref.source, id: ref.id})
+    }
+    function setSource(name, on) {
+        let next = Object.assign({}, sourceOn)
+        next[name] = on
+        sourceOn = next
+        if (demo) return
+        configWorker.command = ["python3", helper(), JSON.stringify({action: "configure", sources: next})]
+        configWorker.running = true
     }
     function loadCatalog(force) {
         if (demo || catalogWorker.running) return
@@ -117,12 +147,12 @@ Scope {
         catalogWorker.command = ["python3", helper(), JSON.stringify({action: "catalog", force: !!force})]
         catalogWorker.running = true
     }
-    function loadDetails(id) {
-        detailsId = id
+    function loadDetails(source, id) {
+        detailsId = source + ":" + id
         detailsError = ""
-        if (demo || details[id] || detailsWorker.running) return
+        if (demo || details[detailsId] || detailsWorker.running) return
         detailsWorker.output = ""
-        detailsWorker.command = ["python3", helper(), JSON.stringify({action: "details", id: id})]
+        detailsWorker.command = ["python3", helper(), JSON.stringify({action: "details", source: source, id: id})]
         detailsWorker.running = true
     }
     function confirm(action, target) {
@@ -143,6 +173,7 @@ Scope {
             setup = data.setup
             addons = data.addons
             gameRunning = data.gameRunning
+            if (data.setup.sources) sourceOn = data.setup.sources
             downloads = data.downloads || []
             let kept = {}
             addons.forEach(a => { if (checks[a.id]) kept[a.id] = checks[a.id] })
@@ -164,9 +195,11 @@ Scope {
             data.results.forEach(r => { if (r.ok) delete next[r.id] })
             checks = next
         } else {
-            if (action === "install" && request.source === "wowinterface") {
+            if (action === "install" && request.id) {
+                // The installed copy is now current; drop its stale update check.
                 let next = Object.assign({}, checks)
-                delete next["wowi:" + request.id]
+                let id = ":" + String(request.id).toLowerCase()
+                Object.keys(next).filter(k => k.toLowerCase().endsWith(id)).forEach(k => delete next[k])
                 checks = next
             }
             log(data.message + (gameRunning && action !== "configure" ? " Restart the game or /reload to apply." : ""), false)
@@ -210,7 +243,8 @@ Scope {
             app.checks = data.checks
             app.catalog = data.catalog
             app.details = data.details
-            app.catalogInfo = {count: data.catalog.length, fetchedAt: Date.now() / 1000}
+            app.catalogInfo = data.catalogInfo
+            app.sourceOn = data.setup.sources
             app.downloads = data.downloads
             app.status = "Preview mode · example data · changes disabled"
         }
@@ -245,6 +279,7 @@ Scope {
             app.finishCheck(data, auto)
         }
     }
+    Process { id: configWorker }
     Process {
         id: worker
         stdout: SplitParser { onRead: data => app.output += data + "\n" }
@@ -273,10 +308,13 @@ Scope {
             try { data = JSON.parse(output) } catch (e) { data = {ok: false, error: "The details helper failed."} }
             if (!data.ok) { app.detailsError = data.error; return }
             let next = Object.assign({}, app.details)
-            next[data.details.id] = data.details
+            next[data.details.source + ":" + data.details.id] = data.details
             app.details = next
             // The user may have opened another addon while this one loaded.
-            if (app.detailsId && !app.details[app.detailsId]) app.loadDetails(app.detailsId)
+            if (app.detailsId && !app.details[app.detailsId]) {
+                let [source, ...rest] = app.detailsId.split(":")
+                app.loadDetails(source, rest.join(":"))
+            }
         }
     }
 
@@ -501,7 +539,7 @@ Scope {
                             dialog.close()
                             if (action === "add") app.execute({action: "install", location: addLocation.text.trim()})
                             else if (action === "remove") app.execute({action: "remove", id: app.dialogTarget.id})
-                            else if (action === "replace") app.execute({action: "install", source: "wowinterface", id: app.dialogTarget.id})
+                            else if (action === "replace") app.execute({action: "install", source: app.dialogTarget.ref.source, id: app.dialogTarget.ref.id})
                             else app.update(app.updateIds.slice())
                         }
                     }
