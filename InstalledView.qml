@@ -115,10 +115,21 @@ Item {
                             Layout.preferredWidth: 0
                             spacing: 4
                             UI.Label { Layout.fillWidth: true; text: row.modelData.name; elide: Text.ElideRight; font.weight: Font.DemiBold }
-                            UI.Label {
+                            RowLayout {
                                 Layout.fillWidth: true
-                                text: [root.app.versionText(row.modelData.version), root.app.sourceName(row.modelData.source), row.modelData.dirs.length + (row.modelData.dirs.length === 1 ? " folder" : " folders")].filter(x => x).join("  ·  ")
-                                color: UI.Theme.muted; font.pixelSize: 10; elide: Text.ElideRight
+                                spacing: 6
+                                UI.SourceBadge {
+                                    visible: root.app.hasLogo(row.modelData.source)
+                                    source: visible ? row.modelData.source : ""
+                                    label: "Installed from " + root.app.sourceName(row.modelData.source)
+                                    size: 13
+                                }
+                                UI.Label {
+                                    Layout.fillWidth: true
+                                    text: [root.app.versionText(row.modelData.version), root.app.hasLogo(row.modelData.source) ? "" : root.app.sourceName(row.modelData.source),
+                                           row.modelData.dirs.length + (row.modelData.dirs.length === 1 ? " folder" : " folders")].filter(x => x).join("  ·  ")
+                                    color: UI.Theme.muted; font.pixelSize: 10; elide: Text.ElideRight
+                                }
                             }
                             RowLayout {
                                 Layout.fillWidth: true
@@ -179,7 +190,17 @@ Item {
                         Flow {
                             Layout.fillWidth: true
                             spacing: 6
-                            UI.Pill { text: root.app.sourceName(detail.addon?.source || ""); ink: UI.Theme.foreground }
+                            Rectangle {
+                                implicitWidth: sourceRow.implicitWidth + 16; implicitHeight: 24; radius: 6
+                                color: Qt.rgba(UI.Theme.foreground.r, UI.Theme.foreground.g, UI.Theme.foreground.b, 0.09)
+                                RowLayout {
+                                    id: sourceRow
+                                    anchors.centerIn: parent
+                                    spacing: 6
+                                    UI.SourceBadge { visible: root.app.hasLogo(detail.addon?.source); source: visible ? detail.addon.source : ""; size: 14 }
+                                    UI.Label { text: root.app.sourceName(detail.addon?.source || ""); font.pixelSize: 11; font.weight: Font.Medium }
+                                }
+                            }
                             UI.Pill { text: ({enabled: "Enabled", disabled: "Disabled", partial: "Partly disabled"})[detail.addon?.state] || ""; ink: detail.addon?.state === "enabled" ? UI.Theme.accent : UI.Theme.muted }
                             Repeater {
                                 model: detail.addon ? root.badges(detail.addon) : []
@@ -193,16 +214,16 @@ Item {
                                 ["Version", detail.addon.version || "—"],
                                 ["Author", detail.addon.author || "—"],
                                 ["Category", detail.addon.category || "—"],
-                                ["Made for", detail.addon.interfaces.length ? detail.addon.interfaces.join(", ") : "—"],
-                                ["Your game", root.app.game?.interface || "—"],
-                                ["Installed", detail.addon.installedAt ? new Date(detail.addon.installedAt).toLocaleDateString(Qt.locale(), Locale.ShortFormat) : "—"]
+                                ["Addon interface", detail.addon.interfaces.length ? detail.addon.interfaces.join(", ") : "—"],
+                                ["Game interface", root.app.game?.interface || "—"],
+                                ["Installed", detail.addon.installedAt ? root.app.fullDate(detail.addon.installedAt) : "—"]
                             ] : []
                             delegate: RowLayout {
                                 id: fact
                                 required property var modelData
                                 Layout.fillWidth: true
                                 spacing: 12
-                                UI.Label { Layout.preferredWidth: 70; text: fact.modelData[0]; color: UI.Theme.muted; font.pixelSize: 11 }
+                                UI.Label { Layout.preferredWidth: 96; text: fact.modelData[0]; color: UI.Theme.muted; font.pixelSize: 11 }
                                 UI.Label { Layout.fillWidth: true; text: String(fact.modelData[1]); font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
                             }
                         }

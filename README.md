@@ -1,22 +1,12 @@
-# WoW Addons for Omarchy
+# WoW Addons
 
-A native Omarchy app for World of Warcraft addons on Linux. Browse the two big moderated addon sites, CurseForge and WoWInterface, in one list. Install in a click, and keep addons enabled, updated, and complete, without the CurseForge app. It follows your active Omarchy theme and uses only Quickshell, Qt Quick, and the Python standard library.
+An addon manager for World of Warcraft on [Omarchy](https://omarchy.org). Browse addons from CurseForge and WoWInterface, install them in one click, and keep them up to date. You don't need the CurseForge app or an account.
 
-![WoW Addons showing installed addons with filters and a details panel](assets/preview.png)
-
-*Preview rendered from built-in example data.*
-
-- **Installed**: every addon in your AddOns folder, including ones you copied in by hand. Filter by status (enabled, disabled, update available, out of date, missing requirements) and source. Sort by name, install date, what needs attention, or folder count. Modules such as `DBM-Raids` are grouped under their core addon.
-- **Browse**: CurseForge and WoWInterface in one list of about 17,000 addons. An addon listed on both sites appears once, with both sites' downloads added up. Install picks the more recently updated site with a build for your game, and the details view lets you choose the other. Turn either site on or off; both start on. Search by name, author, or folder, and filter by category, game version, and last update. You can also hide what's installed. Sort by downloads, recent updates, or name.
-- **Requirements**: installing an addon also installs the addons it requires (its `.toc` `Dependencies`) from the same catalog, and turns on any that are disabled. Installed addons missing a requirement are flagged, with a button to fix it.
-- **Updates**: checked automatically when the app opens and every 6 hours while it's open, or on demand with **Check updates**. Update one addon or all of them. Addons you installed by hand are checked too, when their `.toc` names their CurseForge or WoWInterface listing (`X-Curse-Project-ID`, `X-WoWI-ID`, or `X-Website`). Updating a hand install replaces its folder, and the addon is tracked from then on.
-- **Add addon**: paste an addon's CurseForge or WoWInterface page, or pick a .zip you downloaded. Recent downloads are offered as one-click picks.
-- **Disable and enable** in one click; **remove** to the trash.
-- Finds Battle.net installs in Wine and Proton prefixes, and every game version inside them (`_retail_`, `_classic_`, `_classic_era_`, betas, and PTRs).
+![The Installed page, showing addons, their status, and a details panel](assets/preview.png)
 
 ## Install
 
-Requires Omarchy (for its Quickshell theme module), `quickshell`, and Python 3.11 or later. No pip or npm packages.
+You need Omarchy 4 or newer. It already has everything the app uses (Quickshell and Python), so there's nothing else to install.
 
 ```bash
 git clone https://github.com/ztrek7/omarchy-wow-addons
@@ -24,53 +14,54 @@ cd omarchy-wow-addons
 python3 scripts/install.py
 ```
 
-Then open **WoW Addons** from the app launcher (`Super` + `Space`). To try it without installing, run `./run` from the checkout. To remove the app and its launcher, run `python3 scripts/install.py --uninstall`. That leaves your addons alone.
+Open **WoW Addons** from the app launcher (Super + Space).
 
-Shortcuts: `Ctrl+F` search, `Ctrl+N` add an addon, `Ctrl+R` refresh, `Ctrl+1`/`Ctrl+2` switch between Installed and Browse, `Escape` close.
+To remove the app later, run `python3 scripts/install.py --uninstall`. Your addons stay where they are.
 
-## How it changes your game folder
+## How it works
 
-- **Disable** moves an addon's folders from `Interface/AddOns` to `Interface/AddOns.disabled`, so it's off for every character. The game rewrites `WTF/…/AddOns.txt` on logout, which would undo edits to that file. Moving folders survives that. **Enable** moves them back. The in-game AddOns list still handles per-character choices among enabled addons.
-- **Remove** moves the folders to the desktop trash (`~/.local/share/Trash`), so you can restore them. Anything an install replaces goes to the trash too. SavedVariables in `WTF` are never touched.
-- **Install** unpacks only real addon folders, meaning folders holding a `.toc` named after them. It refuses archives with absolute paths, `..`, or links. WoWInterface downloads are checked against their published MD5.
-- The game reads addons at startup. When a WoW client is running, the app reminds you to `/reload` or restart.
+**Finding your game.** The app looks for World of Warcraft in Wine and Proton prefixes, such as the Battle.net install that comes with Omarchy. It lists every version it finds, like WoW Retail, WoW Classic, WoW Classic Era, WoW Forever, and their PTRs and betas. Switch between them from the menu in Browse or in Settings. If your game is somewhere unusual, point the app at the folder in Settings.
 
-An addon counts as **out of date** when its `## Interface` list doesn't include your client's interface number, for example 16001 for client 1.60.1. The app reads the flavor-specific `.toc` (`_Vanilla`, `_Classic`, `_Mainline`, and so on) that your client would load.
+**Browsing.** Browse lists about 17,000 addons from CurseForge and WoWInterface together. An addon that's on both sites shows up once, with a logo for each site. You can search, filter by category or last update, hide what you already have, and sort by downloads, date, or name. It only shows addons made for the game you picked, unless you choose "Any game version". Either site can be turned off.
 
-## Where things live
+**Installing.** Install gets the newest stable release made for your game, from whichever site has it. If the addon needs other addons to work, those get installed too. If something is already in the way, the old copy goes to the trash first.
+
+**Updating.** The app checks for updates when it opens and every six hours while it's open. You can update one addon or all of them. Addons you copied in by hand get checked too, as long as their files say which CurseForge or WoWInterface page they came from.
+
+**Turning addons off.** Turning an addon off moves its folder from `Interface/AddOns` to `Interface/AddOns.disabled`, so it's off for every character. Turning it back on moves it back. You can still turn addons on and off per character from the in-game AddOns list.
+
+**Removing.** Removed addons go to the trash, so you can get them back. Your addon settings (in the game's `WTF` folder) are never touched.
+
+WoW only loads addons at login. If the game is open, type `/reload` after making changes.
+
+## Where the addons come from
+
+Only CurseForge and WoWInterface, the two big addon sites. Files always download straight from them, and each download is checked against the size or checksum the site lists. Nothing comes from GitHub or other random links. You can also add a `.zip` you downloaded yourself.
+
+WoWInterface has a public list of its addons. CurseForge only gives API keys to approved apps. So the CurseForge list comes from the public catalog the [instawow](https://github.com/layday/instawow-data) project publishes every day, plus [CFWidget](https://www.cfwidget.com/) for addon details. Other managers that don't ask for a key work the same way.
+
+[Wago](https://addons.wago.io) isn't supported. Wago only gives download access to people with a paid API key. When an addon is also on Wago, its details link to the Wago page.
+
+## Files it keeps
 
 | What | Where |
 | --- | --- |
-| Chosen install folder, game version, and Browse sources | `~/.config/wow-addons/config.json` |
-| Which addons came from which source and version | `~/.local/share/wow-addons/state.json` |
-| Catalog caches, refreshed after 6 hours | `~/.cache/wow-addons/` |
-| The installed app | `~/.local/share/wow-addons/app` |
-
-Game folders are detected under `~/Games/*/drive_c`, `~/.wine`, and Steam's Proton prefixes. Pick another folder in **Settings**.
-
-## Sources and privacy
-
-The app downloads addons from CurseForge and WoWInterface only. Both sites host addons from their authors and moderate uploads. Nothing is installed from code repositories, file links, or other sites. The only other way to add an addon is a .zip you downloaded yourself. Neither site needs an account or API key.
-
-| Site | How the app reads it | Downloads from |
-| --- | --- | --- |
-| CurseForge | The daily community catalog published by [instawow](https://github.com/layday/instawow-data) for browsing, and [CFWidget](https://www.cfwidget.com/) for details and file lists | CurseForge's CDN (`edge.forgecdn.net`), checked against the listed file size |
-| WoWInterface | Its public API (`api.mmoui.com`) | `cdn.wowinterface.com`, checked against the published MD5 |
-
-CurseForge's official API only issues keys to approved applications. The community catalog and CFWidget are built by people who hold such keys and publish the results openly. That's how other key-free managers work too. The catalog also records where else an addon is published. The app uses that only to recognize the same addon on both sites, never as a place to download from.
-
-**Wago Addons** isn't a source. Its data API needs a key that Wago gives to paying supporters, and its `robots.txt` disallows automated downloads. When an addon is also on Wago, its details link to the Wago page. **Tukui** isn't a source either: it hosts just two addons.
-
-The app uses no accounts, analytics, or root.
+| Settings (game folder, game version, sites) | `~/.config/wow-addons/config.json` |
+| Which site each addon was installed from | `~/.local/share/wow-addons/state.json` |
+| Addon catalog, refreshed every 6 hours | `~/.cache/wow-addons/` |
+| The app itself | `~/.local/share/wow-addons/app` |
 
 ## Development
 
+The window is Qt Quick, run by Quickshell. It calls `backend.py` for anything that touches files or the network. `./run` starts the app from a checkout without installing it.
+
 ```bash
-python3 -m unittest discover -s tests                        # backend tests, synthetic data only
-WOW_ADDONS_DEMO=1 quickshell -n -p "$PWD/Smoke.qml"          # UI filters and sorting on example data
-quickshell -n -p "$PWD/Verify.qml"                           # read-only check against your install
+python3 -m unittest discover -s tests                 # Python tests, example data only
+WOW_ADDONS_DEMO=1 quickshell -n -p "$PWD/Smoke.qml"   # UI test with example data
 ```
 
-`backend.py` is the JSON bridge the window calls. `wowdir.py` finds installs and reads `.toc` files, `library.py` changes the AddOns folder, and `sources.py` talks to CurseForge and WoWInterface and unpacks archives, and `catalog.py` merges the two sites' lists for Browse.
+## License
 
-Not affiliated with Blizzard Entertainment, CurseForge, WoWInterface, or Wago. World of Warcraft is a trademark of Blizzard Entertainment, Inc.
+MIT. The CurseForge and WoWInterface logos belong to those sites. They're only used to show where an addon comes from.
+
+This project isn't affiliated with Blizzard Entertainment, CurseForge, WoWInterface, or Wago. World of Warcraft is a trademark of Blizzard Entertainment, Inc.

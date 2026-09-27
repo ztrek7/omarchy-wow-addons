@@ -32,8 +32,8 @@ ScrollView {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
-                        UI.Label { text: flavor.modelData.name + "  ·  " + flavor.modelData.key; font.weight: Font.DemiBold; font.pixelSize: 13 }
-                        UI.Label { Layout.fillWidth: true; text: (flavor.modelData.version ? "Client " + flavor.modelData.version + "  ·  interface " + flavor.modelData.interface : "Version unknown"); color: UI.Theme.muted; font.pixelSize: 11; elide: Text.ElideRight }
+                        UI.Label { text: root.app.gameLabel(flavor.modelData); font.weight: Font.DemiBold; font.pixelSize: 13 }
+                        UI.Label { Layout.fillWidth: true; text: flavor.modelData.key + "  ·  " + (flavor.modelData.interface ? "interface " + flavor.modelData.interface : "version unknown"); color: UI.Theme.muted; font.pixelSize: 11; elide: Text.ElideRight }
                     }
                 }
             }
@@ -70,24 +70,23 @@ ScrollView {
             UI.ActionButton { text: "Open trash ↗"; onClicked: Qt.openUrlExternally("trash:///") }
         }
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: UI.Theme.border }
-        UI.Label { text: "HOW THIS APP CHANGES YOUR GAME"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
+        UI.Label { text: "WHAT CHANGES IN YOUR GAME FOLDER"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
         UI.Label {
             Layout.fillWidth: true
             wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.45; color: UI.Theme.muted
-            text: "•  Disabling moves an addon's folders to Interface/AddOns.disabled, so it's off for every character. Enabling moves them back.\n"
-                + "•  Removing and replacing move folders to the trash. Settings saved in WTF are never touched.\n"
-                + "•  The game reads addons when it starts. If it's running, use /reload or restart it after changes.\n"
-                + "•  The in-game AddOns list still controls per-character choices among enabled addons."
+            text: "•  Turning an addon off moves its folders to Interface/AddOns.disabled, so it's off for every character. Turning it on moves them back.\n"
+                + "•  Removing an addon moves it to the trash. Your addon settings in WTF are left alone.\n"
+                + "•  WoW only loads addons at login. If the game is open, type /reload after making changes.\n"
+                + "•  You can still turn addons on or off per character from the in-game AddOns list."
         }
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: UI.Theme.border }
         UI.Label { text: "ABOUT"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
         UI.Label {
             Layout.fillWidth: true
             wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.45; color: UI.Theme.muted
-            text: "Addons come only from CurseForge and WoWInterface, the two big moderated addon sites (" + (root.app.catalogInfo.count || 0).toLocaleString(Qt.locale(), "f", 0) + " addons). "
-                + "CurseForge listings come from the community catalog published by the instawow project and from CFWidget; files download from CurseForge's own servers. "
-                + "Nothing installs from other sites or code repositories. A .zip you downloaded yourself can be added by hand. "
-                + "Wago Addons isn't included: its data needs a paid key and its site disallows automated downloads. No accounts, keys, or tracking.\n"
+            text: "Addons come from CurseForge and WoWInterface only (" + (root.app.catalogInfo.count || 0).toLocaleString(Qt.locale(), "f", 0) + " in the catalog right now). "
+                + "The CurseForge list comes from the instawow project's public catalog and from CFWidget. Files always download straight from CurseForge or WoWInterface. "
+                + "Wago isn't supported because it requires a paid API key. You can still add a .zip you downloaded yourself.\n"
                 + "Not affiliated with Blizzard Entertainment, CurseForge, WoWInterface, or Wago. World of Warcraft is a trademark of Blizzard Entertainment."
         }
     }

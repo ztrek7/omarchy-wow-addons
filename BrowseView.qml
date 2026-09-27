@@ -14,6 +14,10 @@ Item {
     readonly property var detailRef: entry ? root.infoRef(entry) : null
     readonly property var info: detailRef ? app.details[detailRef.source + ":" + detailRef.id] || null : null
     readonly property int major: app.game?.major || 0
+    // Browse shows addons for the game in use unless "Any game version" is picked.
+    property bool anyGame: false
+    readonly property var games: app.setup.flavors || []
+    readonly property int gameIndex: anyGame ? games.length : Math.max(0, games.findIndex(g => g.key === app.game?.key))
     readonly property string flavour: app.game?.flavour || ""
     readonly property var sourceOrder: ["curseforge", "wowinterface"]
     readonly property var categories: {
@@ -27,7 +31,7 @@ Item {
         let category = categoryFilter.currentIndex > 0 ? categories[categoryFilter.currentIndex - 1]?.name : ""
         let days = [0, 31, 183, 365, 730][updatedFilter.currentIndex]
         let since = days ? Date.now() - days * 86400000 : 0
-        let forGame = gameFilter.currentIndex === 0 && major > 0
+        let forGame = !anyGame && major > 0
         let hide = hideInstalled.checked
         let found = []
         for (let e of app.catalog) {
@@ -67,12 +71,13 @@ Item {
     }
     function gameText(e) {
         if (!major) return ""
-        return usable(e).some(r => root.fitsRef(r)) ? "Made for your game" : "Not tagged for your game"
+        return usable(e).some(r => root.fitsRef(r)) ? "Made for " + (app.game?.name || "your game") : "Not listed for " + (app.game?.name || "your game")
     }
-    function sourcesText(refs) {
-        let names = []
-        refs.forEach(r => { let n = root.app.sourceName(r.source); if (names.indexOf(n) < 0) names.push(n) })
-        return names.join(" · ")
+    // One badge per site, even when a site lists the addon twice.
+    function siteList(refs) {
+        let seen = []
+        refs.forEach(r => { if (seen.indexOf(r.source) < 0) seen.push(r.source) })
+        return seen
     }
     function actionText(e) {
         if (app.busy && app.request.action === "install" && e.sources.some(r => r.id === app.request.id)) return "Installing…"
@@ -109,11 +114,26 @@ Item {
                 id: categoryFilter
                 objectName: "categoryFilter"
                 Layout.fillWidth: true
-                Layout.preferredWidth: 250
-                Layout.minimumWidth: 140
+                Layout.preferredWidth: 190
+                Layout.minimumWidth: 130
                 model: ["All categories"].concat(root.categories.map(c => c.name + "  (" + c.count + ")"))
             }
-            UI.Filter { id: gameFilter; objectName: "gameFilter"; Layout.fillWidth: true; Layout.preferredWidth: 210; Layout.minimumWidth: 140; model: [root.major ? "For my game (" + (root.app.game?.version || root.major + ".x") + ")" : "For my game", "Any game version"] }
+            UI.Filter {
+                id: gameFilter
+                objectName: "gameFilter"
+                Layout.fillWidth: true
+                Layout.preferredWidth: 300
+                Layout.minimumWidth: 200
+                model: root.games.map(g => root.app.gameLabel(g)).concat(["Any game version"])
+                currentIndex: root.gameIndex
+                // Picking another game switches the app to it, so installs go to that game's AddOns folder.
+                onActivated: index => {
+                    root.anyGame = index >= root.games.length
+                    let picked = root.games[index]
+                    if (picked && picked.key !== root.app.game?.key) root.app.execute({action: "configure", flavor: picked.key})
+                    currentIndex = Qt.binding(() => root.gameIndex)
+                }
+            }
             UI.Filter { id: updatedFilter; objectName: "updatedFilter"; Layout.fillWidth: true; Layout.preferredWidth: 190; Layout.minimumWidth: 140; model: ["Updated any time", "Updated past month", "Updated past 6 months", "Updated past year", "Updated past 2 years"] }
             UI.CheckOption { id: hideInstalled; objectName: "hideInstalled"; text: "Hide installed" }
         }
@@ -128,6 +148,7 @@ Item {
                     required property string modelData
                     readonly property var status: root.app.catalogInfo.sources?.[modelData] || null
                     objectName: "source-" + modelData
+                    badge: modelData
                     checked: root.app.sourceOn[modelData] === true
                     text: root.app.sourceName(modelData) + (status ? "  " + status.count.toLocaleString(Qt.locale(), "f", 0) : "") + (status?.error ? "  ⚠" : "")
                     onToggled: root.app.setSource(modelData, checked)
@@ -139,8 +160,8 @@ Item {
         }
         UI.Label {
             Layout.fillWidth: true
-            text: "An addon listed on several sites appears once and installs from the most recently updated one. "
-                + "Categories come from WoWInterface. Game versions are what authors list; newer clients often run older addons."
+            text: "Addons on both sites show up once. Install gets the newest release made for your game, from whichever site has it. "
+                + "Categories come from WoWInterface. Game versions are whatever the author listed, and older addons often still work."
                 + (root.app.catalogMessage ? "  " + root.app.catalogMessage : "")
             color: UI.Theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap
         }
@@ -197,14 +218,23 @@ Item {
                         }
                         UI.Label {
                             Layout.fillWidth: true
-                            text: "↓ " + root.app.compact(card.modelData.downloads) + "    Updated " + root.app.monthYear(card.modelData.updated)
+                            text: "↓ " + root.app.compact(card.modelData.downloads) + "    Updated " + root.app.fullDate(card.modelData.updated)
                             font.pixelSize: 11; elide: Text.ElideRight
                         }
-                        UI.Label {
+                        RowLayout {
                             Layout.fillWidth: true
-                            text: root.sourcesText(card.modelData.refs) + (root.gameText(card.item) ? "  ·  " + root.gameText(card.item) : "")
-                            color: root.major && !card.modelData.refs.some(r => root.fitsRef(r)) ? UI.Theme.warning : UI.Theme.muted
-                            font.pixelSize: 10; elide: Text.ElideRight
+                            spacing: 5
+                            Repeater {
+                                model: root.siteList(card.modelData.refs)
+                                delegate: UI.SourceBadge { required property string modelData; source: modelData; label: "On " + root.app.sourceName(modelData) }
+                            }
+                            UI.Label {
+                                Layout.fillWidth: true
+                                leftPadding: 3
+                                text: root.gameText(card.item)
+                                color: root.major && !card.modelData.refs.some(r => root.fitsRef(r)) ? UI.Theme.warning : UI.Theme.muted
+                                font.pixelSize: 10; elide: Text.ElideRight
+                            }
                         }
                         Item { Layout.fillHeight: true }
                         RowLayout {
@@ -279,12 +309,17 @@ Item {
                     Layout.fillWidth: true
                     spacing: 10
                     opacity: on ? 1 : 0.5
-                    UI.Label { Layout.preferredWidth: 104; text: root.app.sourceName(sourceRow.modelData.source); font.weight: Font.DemiBold; font.pixelSize: 12 }
+                    RowLayout {
+                        Layout.preferredWidth: 124
+                        spacing: 7
+                        UI.SourceBadge { visible: root.app.hasLogo(sourceRow.modelData.source); source: root.app.hasLogo(sourceRow.modelData.source) ? sourceRow.modelData.source : ""; size: 18 }
+                        UI.Label { text: root.app.sourceName(sourceRow.modelData.source); font.weight: Font.DemiBold; font.pixelSize: 12 }
+                    }
                     UI.Label {
                         Layout.fillWidth: true
-                        text: sourceRow.wago ? "Also on Wago. Wago's data needs a paid key, so download it there and use Add addon → .zip if you prefer it."
-                            : ["Updated " + root.app.monthYear(sourceRow.modelData.updated), sourceRow.modelData.downloads ? "↓ " + root.app.compact(sourceRow.modelData.downloads) : "",
-                               root.fitsRef(sourceRow.modelData) ? "made for your game" : "not tagged for your game", sourceRow.on ? "" : "source turned off"].filter(x => x).join("  ·  ")
+                        text: sourceRow.wago ? "Also on Wago. This app can't download from Wago, but you can get it there and add the .zip."
+                            : ["Updated " + root.app.fullDate(sourceRow.modelData.updated), sourceRow.modelData.downloads ? "↓ " + root.app.compact(sourceRow.modelData.downloads) : "",
+                               root.fitsRef(sourceRow.modelData) ? "made for " + (root.app.game?.name || "your game") : "not listed for " + (root.app.game?.name || "your game"), sourceRow.on ? "" : "source turned off"].filter(x => x).join("  ·  ")
                         color: UI.Theme.muted; font.pixelSize: 11; wrapMode: Text.Wrap
                     }
                     UI.ActionButton {

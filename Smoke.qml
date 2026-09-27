@@ -80,8 +80,11 @@ App {
             let byName = name => app.catalog.find(e => e.name === name)
             app.check(browse.results.every(x => x.refs.some(r => browse.fitsRef(r))), "default shows addons made for this game")
             app.check(!entries(browse.results).some(e => e.name === "Retail Only Meter"), "CurseForge flavour filter")
+            app.check(JSON.stringify(game.model) === JSON.stringify(["WoW Classic Era 1.15.7", "WoW Retail 12.1.0", "Any game version"]), "game menu lists detected games: " + JSON.stringify(game.model))
+            app.check(game.currentIndex === 0, "game menu starts on the game in use")
             let forGame = browse.results.length
-            game.currentIndex = 1
+            game.activated(2)
+            app.check(browse.anyGame && game.currentIndex === 2, "any game version")
             app.check(browse.results.length === app.catalog.length && forGame < app.catalog.length, "any game version shows everything once")
             app.check(app.names(entries(browse.results.slice(0, 2))) === "Trade Ledger, Quest Compass", "most downloaded sums every site's downloads")
             app.check(browse.results[1].downloads === 1250000 + 482000, "downloads total")
@@ -124,7 +127,9 @@ App {
             bsearch.text = "timers"
             app.check(browse.results.length === 11, "browse search: " + browse.results.length)
             bsearch.text = ""
-            game.currentIndex = 0
+            game.activated(0)
+            app.check(!browse.anyGame && browse.results.length === forGame, "back to the game in use")
+            app.check(app.fullDate(Date.UTC(2026, 8, 21, 12)) === "September 21, 2026", "full dates")
 
             app.shot("installed", () => {
                 app.page = "browse"

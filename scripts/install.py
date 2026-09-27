@@ -48,6 +48,7 @@ def install():
         for name in RUNTIME:
             shutil.copy2(source / name, stage / name)
         shutil.copytree(source / "ui", stage / "ui", ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(source / "assets/sources", stage / "assets/sources")
         if target.exists():
             shutil.rmtree(target)
         stage.rename(target)

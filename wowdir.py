@@ -99,7 +99,8 @@ def game_flavour(version, key=""):
     parts = [int(p) if p.isdigit() else 0 for p in (version or "").split(".")[:2]] + [0, 0]
     major, minor = parts[0], parts[1]
     if not major:
-        return {"_retail_": "mainline", "_classic_era_": "vanilla_classic"}.get(key)
+        return {"_retail_": "mainline", "_ptr_": "mainline", "_xptr_": "mainline", "_beta_": "mainline",
+                "_classic_era_": "vanilla_classic", "_classic_era_ptr_": "vanilla_classic"}.get(key)
     if major >= 6:
         return "mainline"
     if major == 1:
@@ -109,8 +110,19 @@ def game_flavour(version, key=""):
     return {2: "tbc_classic", 4: "cata_classic", 5: "mists_classic"}[major]
 
 
-def flavor_name(key):
-    return " ".join(word.upper() if word in ("ptr", "xptr") else word.capitalize() for word in key.strip("_").split("_"))
+GAME_NAMES = {
+    "mainline": "WoW Retail", "vanilla_classic": "WoW Classic Era", "forever_classic": "WoW Forever",
+    "tbc_classic": "WoW Burning Crusade Classic", "wrath_classic": "WoW Wrath Classic", "titan_classic": "WoW Titan Reforged",
+    "cata_classic": "WoW Cataclysm Classic", "mists_classic": "WoW Mists of Pandaria Classic",
+}
+
+
+def flavor_name(key, flavour=None):
+    """_classic_beta_ running 1.60.1 -> "WoW Forever Beta"; _retail_ -> "WoW Retail"."""
+    base = GAME_NAMES.get(flavour) or "WoW " + " ".join(w.capitalize() for w in key.strip("_").split("_") if w not in ("ptr", "xptr", "beta"))
+    words = key.strip("_").split("_")
+    branch = " Beta" if "beta" in words else " PTR" if "ptr" in words or "xptr" in words else ""
+    return base + branch
 
 
 def flavors(root):
@@ -128,14 +140,15 @@ def flavors(root):
             continue
         version = versions.get(child.name, "")
         interface = interface_number(version)
+        flavour = game_flavour(version, child.name)
         result.append({
             "key": child.name,
-            "name": flavor_name(child.name),
+            "name": flavor_name(child.name, flavour),
             "path": str(child),
             "version": ".".join(version.split(".")[:3]),
             "interface": interface,
             "major": interface // 10000 if interface else None,
-            "flavour": game_flavour(version, child.name),
+            "flavour": flavour,
             "addons": str(child / "Interface" / "AddOns"),
         })
     return result

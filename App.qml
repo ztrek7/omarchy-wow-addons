@@ -64,14 +64,19 @@ Scope {
     }
 
     function helper() { return decodeURIComponent(Qt.resolvedUrl("backend.py").toString().replace(/^file:\/\//, "")) }
-    function gameLabel() { return game ? game.name + (game.version ? " " + game.version : "") : "No game found" }
+    function gameLabel(g) {
+        g = g === undefined ? game : g
+        return g ? g.name + (g.version ? " " + g.version : "") : "No game found"
+    }
     function compact(n) {
         if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M"
         if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + "K"
         return String(n)
     }
     function versionText(v) { return !v ? "" : /^\d/.test(v) ? "v" + v : v }
-    function monthYear(ms) { return ms ? new Date(ms).toLocaleDateString(Qt.locale(), "MMM yyyy") : "unknown" }
+    function fullDate(value) { return value ? new Date(value).toLocaleDateString(Qt.locale(), "MMMM d, yyyy") : "unknown" }
+    // Sites with a logo badge; anything else is described in words.
+    function hasLogo(source) { return source === "curseforge" || source === "wowinterface" }
     function sourceName(source) {
         return ({wowinterface: "WoWInterface", curseforge: "CurseForge", wago: "Wago", file: "Zip file", manual: "Manual install"})[source] || source
     }
@@ -142,7 +147,7 @@ Scope {
     }
     function loadCatalog(force) {
         if (demo || catalogWorker.running) return
-        catalogMessage = force ? "Downloading the WoWInterface catalog…" : "Loading the WoWInterface catalog…"
+        catalogMessage = force ? "Downloading the addon catalog…" : "Loading the addon catalog…"
         catalogWorker.output = ""
         catalogWorker.command = ["python3", helper(), JSON.stringify({action: "catalog", force: !!force})]
         catalogWorker.running = true
@@ -166,7 +171,7 @@ Scope {
     function finish(code) {
         let data
         try { data = JSON.parse(output) }
-        catch (e) { log(errors.trim() || "The helper did not return a valid response (exit " + code + ").", true); return }
+        catch (e) { log(errors.trim() || "Something went wrong (exit " + code + ").", true); return }
         if (!data.ok) { log(data.error || "The operation failed.", true); return }
         let action = request.action
         if (action === "list") {
@@ -328,7 +333,7 @@ Scope {
         color: UI.Theme.background
         onVisibleChanged: {
             if (!visible) {
-                if (app.busy) { visible = true; app.status = "An operation is running. Close when it finishes." }
+                if (app.busy) { visible = true; app.status = "Still working. Close the window when this finishes." }
                 else Qt.quit()
             }
         }
@@ -395,7 +400,7 @@ Scope {
                             spacing: 3
                             UI.Label { text: "GAME"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
                             UI.Label { Layout.fillWidth: true; text: app.game ? app.game.name : "Not found"; font.weight: Font.DemiBold; font.pixelSize: 13; elide: Text.ElideRight }
-                            UI.Label { Layout.fillWidth: true; visible: !!app.game; text: app.game ? (app.game.version || "Unknown version") + (app.game.interface ? " · " + app.game.interface : "") : ""; color: UI.Theme.muted; font.pixelSize: 11 }
+                            UI.Label { Layout.fillWidth: true; visible: !!app.game; text: app.game ? "Version " + (app.game.version || "unknown") : ""; color: UI.Theme.muted; font.pixelSize: 11 }
                             UI.Label { Layout.fillWidth: true; visible: app.gameRunning; text: "● Running"; color: UI.Theme.accent; font.pixelSize: 11 }
                         }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: app.page = "settings" }

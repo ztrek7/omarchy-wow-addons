@@ -12,7 +12,7 @@ class Detection(FakeInstall):
         self.assertEqual(setup["flavor"]["key"], "_classic_era_")
         self.assertEqual(setup["flavor"]["version"], "1.15.7")
         self.assertEqual(setup["flavor"]["interface"], 11507)
-        self.assertEqual(setup["flavor"]["name"], "Classic Era")
+        self.assertEqual(setup["flavor"]["name"], "WoW Classic Era")
 
     def test_configured_flavor_wins(self):
         setup = wowdir.resolve({"flavor": "_retail_"}, home=self.home)
@@ -26,6 +26,13 @@ class Detection(FakeInstall):
         self.assertEqual(wowdir.interface_number("1.60.1.70009"), 16001)
         self.assertEqual(wowdir.interface_number("12.1.0"), 120100)
         self.assertIsNone(wowdir.interface_number("beta"))
+
+    def test_game_names(self):
+        cases = {("_classic_beta_", "1.60.1"): "WoW Forever Beta", ("_retail_", "12.1.0"): "WoW Retail",
+                 ("_classic_", "5.5.4"): "WoW Mists of Pandaria Classic", ("_classic_era_ptr_", "1.15.8"): "WoW Classic Era PTR",
+                 ("_anniversary_", "2.5.6"): "WoW Burning Crusade Classic", ("_xptr_", ""): "WoW Retail PTR"}
+        for (key, version), name in cases.items():
+            self.assertEqual(wowdir.flavor_name(key, wowdir.game_flavour(version, key)), name)
 
     def test_product_dirs(self):
         self.assertEqual(wowdir.product_dir("wow_classic_beta"), "_classic_beta_")

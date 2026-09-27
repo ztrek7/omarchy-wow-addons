@@ -8,7 +8,7 @@
   "flavors": [
    {
     "key": "_classic_era_",
-    "name": "Classic Era",
+    "name": "WoW Classic Era",
     "path": "/tmp/demo/World of Warcraft/_classic_era_",
     "version": "1.15.7",
     "interface": 11507,
@@ -18,7 +18,7 @@
    },
    {
     "key": "_retail_",
-    "name": "Retail",
+    "name": "WoW Retail",
     "path": "/tmp/demo/World of Warcraft/_retail_",
     "version": "12.1.0",
     "interface": 120100,
@@ -29,7 +29,7 @@
   ],
   "flavor": {
    "key": "_classic_era_",
-   "name": "Classic Era",
+   "name": "WoW Classic Era",
    "path": "/tmp/demo/World of Warcraft/_classic_era_",
    "version": "1.15.7",
    "interface": 11507,
