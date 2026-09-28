@@ -277,15 +277,19 @@ def curseforge_project(text):
     return match.group(1).lower() if match else None
 
 
-def choose_curseforge_file(files, game):
-    """Newest release .zip for this client: its exact version, else the same game (e.g. any WoW Forever
-    patch), else the same major version for addons not listed for this game at all."""
+def choose_curseforge_file(files, game, other_games=False):
+    """Newest release .zip for this client: its exact version, else the same game (e.g. any WoW Forever patch).
+
+    other_games also allows a file for another game with the same major version, for an addon the
+    site doesn't list for this game at all. It's never on otherwise: Classic Era (1.15) and Forever
+    (1.60), or Wrath (3.4) and Titan Reforged (3.80), share a major version but not their files.
+    """
     releases = [f for f in files if isinstance(f, dict) and f.get("type") == "release" and isinstance(f.get("id"), int)
                 and str(f.get("name", "")).lower().endswith(".zip")]
     version, major, flavour = game.get("version"), str(game.get("major")), game.get("flavour")
     exact = [f for f in releases if version and version in (f.get("versions") or [])]
     same_game = [f for f in releases if flavour and any(wowdir.game_flavour(str(v)) == flavour for v in f.get("versions") or [])]
-    related = [f for f in releases if any(str(v).split(".")[0] == major for v in f.get("versions") or [])]
+    related = [f for f in releases if other_games and any(str(v).split(".")[0] == major for v in f.get("versions") or [])]
     pool = exact or same_game or related
     return max(pool, key=lambda f: f.get("uploaded_at") or "") if pool else None
 
@@ -314,12 +318,13 @@ def cfwidget(project):
 STALE_AFTER = 3 * 86400 * 1000
 
 
-def curseforge_release(project, game, listed_updated=0):
+def curseforge_release(project, game, listed_updated=0, other_games=False):
     """The file to install from a CurseForge project.
 
     listed_updated is when the catalog last saw the project change. CFWidget's
     copy of a few projects stops updating; if its newest file is well behind
-    that date, refuse rather than install an old version.
+    that date, refuse rather than install an old version. other_games is as in
+    choose_curseforge_file.
     """
     project = str(project).lower()
     data = cfwidget(project)
@@ -329,12 +334,13 @@ def curseforge_release(project, game, listed_updated=0):
     if listed_updated and newest < listed_updated - STALE_AFTER:
         seen = time.strftime("%B %-d, %Y", time.localtime(newest / 1000)) if newest else "never"
         raise Problem(f"CFWidget's copy of {title} is out of date (its newest file is from {seen}), so it can't be installed from CurseForge right now.")
-    chosen = choose_curseforge_file(files, game)
+    chosen = choose_curseforge_file(files, game, other_games)
     if not chosen:
         raise Problem(f"CurseForge has no release of {title} for this game version.")
     page = (data.get("urls") or {}).get("curseforge") or ""
     slug = CURSEFORGE_PAGE.match(page)
     file_id = chosen["id"]
+    for_this_game = any(v == game.get("version") or wowdir.game_flavour(str(v)) == game.get("flavour") for v in chosen.get("versions") or [])
     return {
         "project": slug.group(1).lower() if slug else project,
         "projectId": str(data.get("id") or ""),
@@ -345,6 +351,7 @@ def curseforge_release(project, game, listed_updated=0):
         # CurseForge's CDN path: files/<id without last 3 digits>/<last 3 digits, unpadded>/<name>.
         "download": f"https://edge.forgecdn.net/files/{file_id // 1000}/{file_id % 1000}/{urllib.parse.quote(chosen['name'])}",
         "url": page or f"https://www.curseforge.com/wow/addons/{project}",
+        "otherGame": not for_this_game,
     }
 
 
@@ -374,7 +381,8 @@ def addon_roots(names):
         return {folder.name: folder for folder in found[depth]}
     # A source archive with the TOC one level down (project-main/Name.toc): name the folder after its TOC.
     shallow = [t for t in tocs if len(t.parts) == 2]
-    stems = {re.sub(r"[-_](mainline|classic|vanilla|tbc|bcc|wrath|wotlkc|cata|mists)$", "", t.stem, flags=re.I) for t in shallow}
+    game_suffix = re.compile(r"[-_](" + "|".join(sorted(wowdir.ALL_TOC_SUFFIXES)) + r")$", re.IGNORECASE)
+    stems = {game_suffix.sub("", t.stem) for t in shallow}
     if len(stems) == 1:
         return {stems.pop(): shallow[0].parent}
     return {}

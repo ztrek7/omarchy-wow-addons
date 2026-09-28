@@ -92,11 +92,11 @@ def details(request):
     return {"details": dict(info, id=str(ident))}
 
 
-def resolve_source(request, game):
+def resolve_source(request, game, other_games=False):
     """Work out what to install: (record, {"url", "md5", "size"} to download, or {"path"} of a local .zip).
 
     Only CurseForge and WoWInterface are downloaded from. Anything else must be
-    a .zip the user already has.
+    a .zip the user already has. other_games is as in curseforge_release.
     """
     kind = request.get("source")
     text = (request.get("location") or "").strip()
@@ -111,10 +111,12 @@ def resolve_source(request, game):
         return record, {"url": info["download"], "md5": info["md5"]}
     project = request.get("id") if kind == "curseforge" else sources.curseforge_project(text)
     if project:
-        release = sources.curseforge_release(catalog.curseforge_id(project), game, catalog.curseforge_updated(project))
+        release = curseforge_release(project, game, other_games)
         record = {"key": f"curseforge:{release['project']}", "source": "curseforge", "sourceId": release["project"],
                   "projectId": release.get("projectId", ""), "name": release["title"], "version": release["version"],
                   "fileId": release["fileId"], "url": release["url"]}
+        if release.get("otherGame"):
+            record["otherGame"] = True  # Its updates may keep coming from that game's files.
         return record, {"url": release["download"], "size": release["size"]}
     path = Path(text).expanduser()
     if text and path.is_file():
@@ -122,13 +124,28 @@ def resolve_source(request, game):
     raise Problem("Paste a CurseForge or WoWInterface addon page, or the path of a .zip you downloaded.")
 
 
-def install_one(request, game, state, replaces=None, installed=None):
+def curseforge_release(project, game, other_games=False):
+    """The CurseForge file for this game.
+
+    other_games lets another game's file with the same major version stand in, and is only passed
+    when the user chose to install the addon (or an addon that was installed that way is updated).
+    Even then it only applies while the catalog says CurseForge doesn't list the addon for this game,
+    as with an addon picked under "Any game version". Checks and updates of anything else never cross
+    games, even if the catalog later stops listing the addon for this game.
+    """
+    listed = catalog.listing("curseforge", project) if other_games else {}
+    elsewhere = bool(listed) and game.get("flavour") not in catalog.listed_games("curseforge", listed)
+    return sources.curseforge_release(catalog.curseforge_id(project), game, catalog.curseforge_updated(project), other_games=elsewhere)
+
+
+def install_one(request, game, state, replaces=None, installed=None, other_games=False):
     """Install one addon. Returns (message, record key).
 
     replaces is the installed addon's id when this takes it over. installed is
     (row, record) for an update, which refuses a file that isn't newer.
+    other_games is as in curseforge_release.
     """
-    record, fetch = resolve_source(request, game)
+    record, fetch = resolve_source(request, game, other_games)
     newer = is_newer(record["source"], record, *installed) if installed else True
     if not newer:
         latest, current = record.get("version") or "no version", installed[0]["version"] or "unknown"
@@ -266,7 +283,7 @@ def for_this_game(choices, game):
     return kept, notes
 
 
-def install_first(choices, game, state, replaces=None):
+def install_first(choices, game, state, replaces=None, other_games=False):
     """Install from the first site that works. Returns (message, key); raises the first site's problem if none do.
 
     The first site is the one chosen. The others are fallbacks, used only if they list the addon for this game.
@@ -278,7 +295,7 @@ def install_first(choices, game, state, replaces=None):
     problems = []
     for choice in first + rest:
         try:
-            message, key = install_one(choice, game, state, replaces)
+            message, key = install_one(choice, game, state, replaces, other_games=other_games)
         except Problem as error:
             problems.append((choice, error))
             continue
@@ -303,7 +320,8 @@ def install(request):
         if site[1]:
             choices = [dict(request, site=site[0], id=site[1])] + other_sites(catalog.load_entries()).get((site[0], str(site[1]).lower()), [])
     replaces = request.get("replaces") if isinstance(request.get("replaces"), str) else None
-    message, key = install_first(choices, game, state, replaces)
+    # The user chose this addon, so an addon CurseForge only lists for another game may use that game's file.
+    message, key = install_first(choices, game, state, replaces, other_games=True)
     return {"message": " ".join([message] + add_requirements(game, state, [key]))}
 
 
@@ -343,8 +361,8 @@ def newest(link, row, record, game, wowi):
         if not entry:
             raise Problem("not listed in the WoWInterface catalog.")
         return entry["version"], is_newer(source, entry, row, record)
-    project = (record or {}).get("projectId") if (record or {}).get("source") == source else None
-    release = sources.curseforge_release(catalog.curseforge_id(project or ident), game, catalog.curseforge_updated(project or ident))
+    own = record if (record or {}).get("source") == source else {}
+    release = curseforge_release(own.get("projectId") or ident, game, other_games=bool(own.get("otherGame")))
     return release["version"], is_newer(source, release, row, record)
 
 
@@ -444,8 +462,9 @@ def update(request):
         problems = []
         for link in links:
             try:
-                message, new_key = install_one({"source": link["source"], "id": link["id"]}, game, state,
-                                               replaces=key, installed=(row, records.get(key)))
+                record = records.get(key) or {}
+                message, new_key = install_one({"source": link["source"], "id": link["id"]}, game, state, replaces=key,
+                                               installed=(row, records.get(key)), other_games=bool(record.get("otherGame")))
                 results.append({"id": key, "ok": True, "message": " ".join([message] + add_requirements(game, state, [new_key]))})
                 break
             except Problem as error:

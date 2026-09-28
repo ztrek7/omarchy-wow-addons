@@ -97,6 +97,16 @@ class CurseForge(FakeInstall):
         later_forever = dict(self.game, version="1.60.2", major=1, flavour="forever_classic")
         self.assertEqual(sources.choose_curseforge_file(files, later_forever)["id"], 1)
 
+    def test_other_games_file_only_when_asked(self):
+        # Classic Era and Forever share major version 1; Wrath and Titan Reforged share 3.
+        files = [{"id": 1, "name": "A-forever.zip", "type": "release", "versions": ["1.60.1"], "uploaded_at": "2026-01-01"},
+                 {"id": 2, "name": "A-titan.zip", "type": "release", "versions": ["3.80.2"], "uploaded_at": "2026-01-01"}]
+        wrath = dict(self.game, version="3.4.5", major=3, flavour="wrath_classic")
+        self.assertIsNone(sources.choose_curseforge_file(files, self.game))
+        self.assertIsNone(sources.choose_curseforge_file(files, wrath))
+        self.assertEqual(sources.choose_curseforge_file(files, self.game, other_games=True)["id"], 1)
+        self.assertEqual(sources.choose_curseforge_file(files, wrath, other_games=True)["id"], 2)
+
     def test_release_download_path(self):
         data = {"title": "Auctionator", "urls": {"curseforge": "https://www.curseforge.com/wow/addons/auctionator"},
                 "files": [{"id": 8939005, "name": "Auctionator 339.zip", "display": "339", "type": "release", "versions": ["1.15.7"],
@@ -167,6 +177,14 @@ class Archives(FakeInstall):
                                "owner-Bar-abc123/core.lua": ""})
         self.assertEqual(list(placed), ["Bar"])
         self.assertTrue((placed["Bar"] / "core.lua").is_file())
+
+    def test_source_archive_with_newer_game_tocs(self):
+        for suffix in ("Camelot", "Standard", "Mainline", "Wrath", "Classic"):
+            placed = self.extract({"owner-Bar-abc123/Bar.toc": toc("Bar"), f"owner-Bar-abc123/Bar_{suffix}.toc": "",
+                                   "owner-Bar-abc123/core.lua": ""})
+            self.assertEqual(list(placed), ["Bar"], suffix)
+            import shutil
+            shutil.rmtree(self.home / "out")
 
     def test_rejects_traversal(self):
         with self.assertRaises(sources.Problem):

@@ -24,17 +24,28 @@ FLAVOR_DIR = re.compile(r"^_[a-z0-9]+(?:_[a-z0-9]+)*_$")
 DISABLED_DIR = "AddOns.disabled"
 
 # The TOC files each game looks for before the plain Name.toc, in order
-# (https://warcraft.wiki.gg/wiki/TOC_format). WoW Forever's code name is Camelot.
+# (https://warcraft.wiki.gg/wiki/TOC_format). WoW Forever's code name is Camelot, and it
+# belongs to the Mainline family; Titan Reforged is a Wrath game. _Mainline and _Classic
+# rank below the game's own suffix. -BCC and -WOTLKC are legacy names. Wrath Classic (3.4)
+# predates _Classic loading outside Classic Era, so it doesn't read it.
 TOC_SUFFIXES = {
-    "mainline": ("Standard", "Mainline"), "vanilla_classic": ("Vanilla", "Classic"), "forever_classic": ("Camelot", "Forever"),
-    "tbc_classic": ("TBC", "BCC", "Classic"), "wrath_classic": ("Wrath", "WOTLKC", "Classic"), "titan_classic": ("Titan", "Wrath", "Classic"),
+    "mainline": ("Standard", "Mainline"), "vanilla_classic": ("Vanilla", "Classic"), "forever_classic": ("Camelot", "Mainline"),
+    "tbc_classic": ("TBC", "BCC", "Classic"), "wrath_classic": ("Wrath", "WOTLKC"), "titan_classic": ("Wrath", "WOTLKC", "Classic"),
     "cata_classic": ("Cata", "Classic"), "mists_classic": ("Mists", "Classic"),
 }
+# Suffixes a game only reads from a patch on (Standard came in 12.1.5; TBC Anniversary 2.5.5
+# started reading _Classic) or only before one (2.5.5 dropped -BCC), per the wiki's patch changes.
+SUFFIX_FROM = {("mainline", "Standard"): (12, 1, 5), ("tbc_classic", "Classic"): (2, 5, 5)}
+SUFFIX_UNTIL = {("tbc_classic", "BCC"): (2, 5, 5)}
+# Every suffix a client reads, including modes this app doesn't manage.
 ALL_TOC_SUFFIXES = {suffix.lower() for suffixes in TOC_SUFFIXES.values() for suffix in suffixes} | {"plunderstorm", "wowlabs", "wowhack"}
-# The names each game answers to in ## AllowLoadGameType.
+# Every game type a client recognizes in ## AllowLoadGameType. A list naming none of them is ignored.
+KNOWN_GAME_TYPES = {"standard", "mists", "cata", "wrath", "tbc", "camelot", "vanilla", "plunderstorm", "wowlabs", "wowhack",
+                    "mainline", "classic"}
+# The names each game answers to in ## AllowLoadGameType: its own game type and its family.
 GAME_TYPES = {
-    "mainline": {"mainline", "standard"}, "vanilla_classic": {"vanilla", "classic"}, "forever_classic": {"camelot"},
-    "tbc_classic": {"tbc", "classic"}, "wrath_classic": {"wrath", "classic"}, "titan_classic": {"titan", "wrath", "classic"},
+    "mainline": {"mainline", "standard"}, "vanilla_classic": {"vanilla", "classic"}, "forever_classic": {"camelot", "mainline"},
+    "tbc_classic": {"tbc", "classic"}, "wrath_classic": {"wrath", "classic"}, "titan_classic": {"wrath", "classic"},
     "cata_classic": {"cata", "classic"}, "mists_classic": {"mists", "classic"},
 }
 CURSEFORGE_URL = re.compile(r"curseforge\.com/wow/addons/([a-z0-9][a-z0-9-]*)", re.IGNORECASE)
@@ -232,7 +243,19 @@ def toc_suffix(folder, toc):
     return False
 
 
-def pick_toc(folder, flavour):
+def toc_suffixes(game):
+    """The suffixes this client reads, best first. An unknown version counts as the newest client."""
+    flavour = (game or {}).get("flavour")
+    number = tuple(int(n) for n in re.findall(r"\d+", str((game or {}).get("version") or ""))[:3])
+    def reads(suffix):
+        start, end = SUFFIX_FROM.get((flavour, suffix)), SUFFIX_UNTIL.get((flavour, suffix))
+        if not number:
+            return not end  # The newest client: it reads added suffixes, not retired ones.
+        return (not start or number >= start) and (not end or number < end)
+    return tuple(s for s in TOC_SUFFIXES.get(flavour, ()) if reads(s))
+
+
+def pick_toc(folder, game):
     """The TOC this game would load, and whether it loads the folder at all."""
     tocs = {}
     for toc in Path(folder).glob("*.toc"):
@@ -241,8 +264,7 @@ def pick_toc(folder, flavour):
             tocs[(suffix or "").lower()] = toc
     if not tocs:
         return None, False
-    preferred = TOC_SUFFIXES.get(flavour, ())
-    for suffix in preferred:
+    for suffix in toc_suffixes(game):
         if suffix.lower() in tocs:
             return tocs[suffix.lower()], True
     if "" in tocs:
@@ -272,11 +294,11 @@ def split_list(value):
 def read_addon(folder, game):
     folder = Path(folder)
     flavour = game.get("flavour") if game else None
-    toc, loadable = pick_toc(folder, flavour)
+    toc, loadable = pick_toc(folder, game)
     fields = parse_toc(toc) if toc else {}
     # "## AllowLoadGameType: standard" marks a part that only loads in those games, like
     # BigWigs' Retail raid modules. The game skips it here on purpose; it isn't out of date.
-    allowed = {t.lower() for t in split_list(fields.get("allowloadgametype"))}
+    allowed = {t.lower() for t in split_list(fields.get("allowloadgametype"))} & KNOWN_GAME_TYPES
     if allowed and flavour in GAME_TYPES and not allowed & GAME_TYPES[flavour]:
         loadable = False
     interfaces = []

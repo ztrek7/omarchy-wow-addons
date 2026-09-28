@@ -74,12 +74,59 @@ class Toc(FakeInstall):
         # Classic Era still reads its own file.
         self.assertEqual(wowdir.read_addon(folder, self.game)["interfaces"], [11508, 11509])
 
+    def test_wow_forever_falls_back_to_mainline_tocs(self):
+        # Forever reads _Camelot, then _Mainline, then Name.toc. There's no _Forever suffix.
+        folder = self.addons / "Bar"
+        folder.mkdir()
+        (folder / "Bar_Mainline.toc").write_text("## Interface: 16001\n## Title: Bar Mainline\n")
+        (folder / "Bar_Vanilla.toc").write_text("## Interface: 11507\n## Title: Bar Vanilla\n")
+        (folder / "Bar_Forever.toc").write_text("## Interface: 11507\n## Title: Not a real suffix\n")
+        info = wowdir.read_addon(folder, self.forever())
+        self.assertEqual((info["title"], info["loadable"], info["outOfDate"]), ("Bar Mainline", True, False))
+        self.assertEqual(wowdir.read_addon(folder, self.game)["title"], "Bar Vanilla")
+
+    def test_titan_reforged_is_a_wrath_game(self):
+        titan = dict(self.game, version="3.80.2", interface=38002, major=3, flavour="titan_classic")
+        folder = self.addons / "Bar"
+        folder.mkdir()
+        (folder / "Bar_Wrath.toc").write_text("## Interface: 38002\n## Title: Bar Wrath\n")
+        (folder / "Bar_Titan.toc").write_text("## Interface: 38002\n## Title: Not a real suffix\n")
+        self.assertEqual(wowdir.read_addon(folder, titan)["title"], "Bar Wrath")
+        self.assertTrue(wowdir.read_addon(make_addon(self.addons, "W", interface="38002", AllowLoadGameType="wrath"), titan)["loadable"])
+        # "titan" isn't a game type clients know, and a list naming none they know is ignored.
+        self.assertTrue(wowdir.read_addon(make_addon(self.addons, "T", interface="38002", AllowLoadGameType="titan"), titan)["loadable"])
+        self.assertFalse(wowdir.read_addon(make_addon(self.addons, "S", interface="38002", AllowLoadGameType="titan, standard"), titan)["loadable"])
+
+    def test_suffixes_follow_client_patches(self):
+        def pick(names, **game):
+            folder = self.addons / "V"
+            if folder.exists():
+                import shutil
+                shutil.rmtree(folder)
+            folder.mkdir()
+            for name in names:
+                (folder / f"{name}.toc").write_text(f"## Interface: 1\n## Title: {name}\n")
+            return wowdir.read_addon(folder, dict(self.game, **game))["title"]
+        retail = {"flavour": "mainline"}
+        self.assertEqual(pick(["V", "V_Standard"], version="12.1.0", **retail), "V")  # _Standard came in 12.1.5.
+        self.assertEqual(pick(["V", "V_Standard"], version="12.1.5", **retail), "V_Standard")
+        tbc = {"flavour": "tbc_classic"}
+        self.assertEqual(pick(["V", "V-BCC", "V_Classic"], version="2.5.4", **tbc), "V-BCC")
+        self.assertEqual(pick(["V", "V-BCC", "V_Classic"], version="2.5.5", **tbc), "V_Classic")  # 2.5.5 dropped -BCC.
+        self.assertEqual(pick(["V", "V_Classic"], version="3.4.3", flavour="wrath_classic"), "V")
+        self.assertEqual(pick(["V", "V_Classic"], version="3.80.2", flavour="titan_classic"), "V_Classic")
+        self.assertEqual(pick(["V", "V_Standard"], version="", **retail), "V_Standard")  # Unknown: the newest client.
+        self.assertEqual(pick(["V", "V-BCC", "V_Classic"], version="", **tbc), "V_Classic")
+
     def test_parts_for_other_games_are_not_out_of_date(self):
         folder = make_addon(self.addons, "BigWigs_Midnight", interface="120100", AllowLoadGameType="standard")
         info = wowdir.read_addon(folder, self.forever())
         self.assertEqual((info["loadable"], info["outOfDate"]), (False, False))
         both = make_addon(self.addons, "Both", interface="16001", AllowLoadGameType="standard, camelot")
         self.assertTrue(wowdir.read_addon(both, self.forever())["loadable"])
+        # Forever is in the Mainline family, so "mainline" includes it.
+        family = make_addon(self.addons, "Family", interface="16001", AllowLoadGameType="mainline")
+        self.assertTrue(wowdir.read_addon(family, self.forever())["loadable"])
 
     def test_line_breaks_in_notes(self):
         folder = make_addon(self.addons, "Bags", Notes="See your items at any time.|nBy João and Jason")

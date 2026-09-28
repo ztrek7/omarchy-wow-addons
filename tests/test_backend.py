@@ -162,7 +162,7 @@ class Backend(FakeInstall):
                "sources": [{"source": "curseforge", "id": "deadly-boss-mods", "flavours": ["vanilla_classic"], "updated": 5, "downloads": 9}]}
         other = {"key": "wowinterface:1", "name": "Someone's DBM skin", "dirs": ["DBM-Core", "Skin"], "sources": [{"source": "wowinterface", "id": "1", "gameVersions": ["1.15.7"], "updated": 9, "downloads": 1}]}
         archives = {"raids": module, "deadly-boss-mods": core}
-        def release(project, game, listed_updated=0):
+        def release(project, game, listed_updated=0, other_games=False):
             return self.curse("1", size=len(archives[project]), project=project)
         downloads = []
         def fetch(url, **kwargs):
@@ -343,6 +343,59 @@ class Backend(FakeInstall):
         with self.listings(games={("wowinterface", "77"): "12.1.0"}):
             check = self.call(action="check")["checks"]["local:Boss"]
         self.assertEqual(check, {"state": "unknown", "message": "Neither site lists Boss for WoW Classic Era, so it isn't updated from them."})
+
+    def test_curseforge_only_crosses_games_when_asked_and_not_listed_here(self):
+        seen = {}
+        def release(project, game, listed_updated=0, other_games=False):
+            seen[project] = other_games
+            return self.curse("1", project=project)
+        listed = self.listings(games={("curseforge", "here"): "1.15.7", ("curseforge", "elsewhere"): "1.60.1"})
+        with patch.object(sources, "curseforge_release", side_effect=release), listed:
+            for project in ("here", "elsewhere", "unknown"):
+                backend.curseforge_release(project, self.game, other_games=True)
+            self.assertEqual(seen, {"here": False, "elsewhere": True, "unknown": False})
+            backend.curseforge_release("elsewhere", self.game)
+            self.assertFalse(seen["elsewhere"])
+
+    def cfwidget_files(self, *files):
+        """CFWidget's answer for project 'boss', with (id, version, game version) files."""
+        data = {"title": "Boss", "id": 2382, "urls": {"curseforge": "https://www.curseforge.com/wow/addons/boss"},
+                "files": [{"id": i, "name": f"Boss-{v}.zip", "display": v, "type": "release", "versions": [g],
+                           "filesize": len(self.boss_zip(v)), "uploaded_at": f"2026-0{n + 1}-01T00:00:00Z"} for n, (i, v, g) in enumerate(files)]}
+        return patch.object(sources, "cfwidget", return_value=data)
+
+    def boss_zip(self, version):
+        return make_zip({f"Boss/Boss.toc": toc("Boss", Version=version)})
+
+    def fetch_boss(self, url, **kwargs):
+        return self.boss_zip(url.rsplit("-", 1)[1].removesuffix(".zip"))
+
+    def test_updates_never_switch_to_another_games_file(self):
+        # Installed for Classic Era; later CurseForge only lists Boss for Forever, with a newer Forever file.
+        with self.cfwidget_files((1001, "1.0", "1.15.7")), patch.object(sources, "fetch", side_effect=self.fetch_boss), \
+                self.listings(games={("curseforge", "boss"): "1.15.7"}):
+            self.assertTrue(self.call(action="install", source="curseforge", id="boss")["ok"])
+        forever_only = self.listings(games={("curseforge", "boss"): "1.60.1", ("curseforge", "2382"): "1.60.1"})
+        with self.cfwidget_files((1001, "1.0", "1.15.7"), (1002, "2.0", "1.60.1")), forever_only:
+            self.assertEqual(self.call(action="check")["checks"]["curseforge:boss"]["state"], "current")
+        with self.cfwidget_files((1002, "2.0", "1.60.1")), patch.object(sources, "fetch", side_effect=self.fetch_boss) as fetch, forever_only:
+            check = self.call(action="check")["checks"]["curseforge:boss"]
+            result = self.call(action="update", ids=["curseforge:boss"])["results"][0]
+        self.assertEqual(check["state"], "error")
+        self.assertIn("no release of Boss for this game version", check["message"])
+        self.assertFalse(result["ok"])
+        fetch.assert_not_called()
+        self.assertEqual(self.call(action="list")["addons"][0]["version"], "1.0")
+
+    def test_a_chosen_other_game_install_keeps_updating_from_that_game(self):
+        forever_only = self.listings(games={("curseforge", "boss"): "1.60.1", ("curseforge", "2382"): "1.60.1"})
+        with self.cfwidget_files((1002, "2.0", "1.60.1")), patch.object(sources, "fetch", side_effect=self.fetch_boss), forever_only:
+            self.assertTrue(self.call(action="install", source="curseforge", id="boss")["ok"])
+        self.assertTrue(library.packages(library.load_state(), self.game)[0]["otherGame"])
+        with self.cfwidget_files((1002, "2.0", "1.60.1"), (1003, "2.1", "1.60.1")), patch.object(sources, "fetch", side_effect=self.fetch_boss), forever_only:
+            self.assertEqual(self.call(action="check")["checks"]["curseforge:boss"]["state"], "available")
+            self.assertTrue(self.call(action="update", ids=["curseforge:boss"])["results"][0]["ok"])
+        self.assertEqual(self.call(action="list")["addons"][0]["version"], "2.1")
 
     def test_same_site_update_needs_a_newer_file(self):
         self.install_curseforge("2.0", "Boss")
