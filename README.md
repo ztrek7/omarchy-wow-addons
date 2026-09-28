@@ -28,7 +28,7 @@ To remove the app later, run `python3 scripts/install.py --uninstall`. Your addo
 
 **Installing.** Install gets the newest stable release listed for your game, from whichever site has it. If the addon needs other addons to work, those get installed too. If something is already in the way, the old copy goes to the trash first.
 
-**Updating.** The app checks for updates when it opens and every six hours while it's open. You can update one addon or all of them. Addons you copied in by hand get checked too, as long as their files say which CurseForge or WoWInterface page they came from.
+**Updating.** The app checks for updates when it opens and every six hours while it's open. You can update one addon or all of them. Addons you copied in by hand get checked too, as long as their files say which CurseForge or WoWInterface page they came from and that site lists them for your game. If the app can't tell whether a site's version is newer than yours, like 2.0 against 2.0-12-gabc123, it says so instead of offering it as an update.
 
 **Turning addons off.** Turning an addon off moves its folder from `Interface/AddOns` to `Interface/AddOns.disabled`, so it's off for every character. Turning it back on moves it back. You can still turn addons on and off per character from the in-game AddOns list.
 
@@ -42,7 +42,7 @@ Only CurseForge and WoWInterface, the two big addon sites. Files always download
 
 WoWInterface has a public list of its addons. CurseForge only gives API keys to approved apps. So the CurseForge list comes from the public catalog the [instawow](https://github.com/layday/instawow-data) project publishes every day, plus [CFWidget](https://www.cfwidget.com/) for logos, details, and file lists. Other managers that don't ask for a key work the same way.
 
-CFWidget's copy of a project occasionally stops updating. The app checks each file list against the catalog's last-updated date and won't install an old version from a stale copy. If WoWInterface has an up-to-date copy of the same addon, it installs that instead and tells you. If not, it says so, and you can download the addon from its page and add the `.zip`. The app never swaps in an older version just because it's available.
+CFWidget's copy of a project occasionally stops updating. The app checks each file list against the catalog's last-updated date and won't install an old version from a stale copy. If WoWInterface has an up-to-date copy of the same addon, listed for your game, it installs that instead and tells you. If not, it says so, and you can download the addon from its page and add the `.zip`. The app never swaps in an older version just because it's available.
 
 [Wago](https://addons.wago.io) isn't supported. Wago only gives download access to people with a paid API key. When an addon is also on Wago, its details link to the Wago page.
 

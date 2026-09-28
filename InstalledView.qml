@@ -303,6 +303,7 @@ Item {
                                 : detail.check?.state === "available" ? "Version " + detail.check.latest + " is available from " + root.app.sourceName(detail.check.source) + "."
                                 : detail.check?.state === "current" ? "Up to date with " + root.app.sourceName(detail.check.source) + " (" + detail.check.latest + ")."
                                 : detail.check?.state === "error" ? "Couldn't check. " + detail.check.message
+                                : detail.check?.state === "unknown" ? detail.check.message
                                 : "Not checked yet."
                             color: detail.check?.state === "error" ? UI.Theme.danger : detail.check?.state === "available" ? UI.Theme.accent : UI.Theme.muted
                             font.pixelSize: 12; wrapMode: Text.WordWrap

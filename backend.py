@@ -122,9 +122,18 @@ def resolve_source(request, game):
     raise Problem("Paste a CurseForge or WoWInterface addon page, or the path of a .zip you downloaded.")
 
 
-def install_one(request, game, state):
-    """Install one addon. Returns (message, record key)."""
+def install_one(request, game, state, replaces=None, installed=None):
+    """Install one addon. Returns (message, record key).
+
+    replaces is the installed addon's id when this takes it over. installed is
+    (row, record) for an update, which refuses a file that isn't newer.
+    """
     record, fetch = resolve_source(request, game)
+    newer = is_newer(record["source"], record, *installed) if installed else True
+    if not newer:
+        latest, current = record.get("version") or "no version", installed[0]["version"] or "unknown"
+        raise Problem(f"its newest file ({latest}) isn't newer than the installed {current}." if newer is False
+                      else f"can't tell whether its newest file ({latest}) is newer than the installed {current}, so it wasn't installed.")
     workspace = library.staging_dir(game)
     try:
         archive = fetch.get("path")
@@ -138,7 +147,7 @@ def install_one(request, game, state):
             # No catalog identity: name it after the main folder so reinstalling replaces it.
             main = sorted(staged, key=lambda n: (len(n), n.lower()))[0]
             record.update(key=f"file:{main.lower()}", name=main)
-        result = library.install(game, staged, record, state)
+        result = library.install(game, staged, record, state, replaces)
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
     dirs = result["record"]["dirs"]
@@ -167,21 +176,34 @@ def requirement_source(folder, entries, game):
 
 
 def add_requirements(game, state, keys):
-    """Install the addons these ones require, and turn on required addons that are off. Returns notes."""
+    """Install the addons these ones require, and turn on required addons that are off. Returns notes.
+
+    Requirements already installed are followed too: a plugin can't load if its core is missing a library.
+    """
     notes, tried, keys, fetched = [], set(), set(keys), set()
     entries = None
-    for _ in range(4):  # Requirements can have their own.
+    for _ in range(8):  # Requirements can have their own.
         rows = library.list_addons(game, state)
+        owners = {d["name"].lower(): r for r in rows for d in r["dirs"]}
         wanting = [r for r in rows if r["id"] in keys]
+        followed = False
         for row in wanting:
-            for folder in row["requiresDisabled"]:
-                owner = next((r for r in rows if any(d["name"].lower() == folder.lower() for d in r["dirs"])), None)
-                if owner and owner["state"] != "enabled" and folder.lower() not in tried:
+            for folder in row["requires"]:
+                owner = owners.get(folder.lower())
+                if not owner:
+                    continue
+                if owner["id"] not in keys:
+                    keys.add(owner["id"])
+                    followed = True
+                if folder in row["requiresDisabled"] and owner["state"] != "enabled" and folder.lower() not in tried:
                     tried.add(folder.lower())
                     library.set_enabled(game, owner["id"], True, state)
+                    owner["state"] = "enabled"
                     notes.append(f"Turned on {owner['name']}, which {row['name']} requires.")
         missing = [(row, folder) for row in wanting for folder in row["missing"] if folder.lower() not in tried]
         if not missing:
+            if followed:
+                continue
             break
         if entries is None:
             try:
@@ -230,15 +252,33 @@ def current_choices(choices):
     return kept, notes
 
 
-def install_first(choices, game, state):
-    """Install from the first site that works. Returns (message, key); raises the first site's problem if none do."""
+def listed_for(choice, game):
+    """Whether the catalog says this site lists the addon for exactly this game."""
+    source = choice.get("source") or choice.get("site") or ""
+    return game.get("flavour") in catalog.listed_games(source, catalog.listing(source, choice.get("id") or ""))
+
+
+def for_this_game(choices, game):
+    """Keep sites that list the addon for this game, so a fallback never brings another game's build. Returns (kept, notes)."""
+    kept = [c for c in choices if listed_for(c, game)]
+    notes = [f"{SOURCE_NAMES.get(c.get('source') or c.get('site'), 'Another site')} doesn't list it for {game.get('name', 'this game')}, so it wasn't tried."
+             for c in choices if c not in kept]
+    return kept, notes
+
+
+def install_first(choices, game, state, replaces=None):
+    """Install from the first site that works. Returns (message, key); raises the first site's problem if none do.
+
+    The first site is the one chosen. The others are fallbacks, used only if they list the addon for this game.
+    """
     first, rest = choices[:1], choices[1:]
     rest, skipped = current_choices(first + rest)
     rest = [c for c in rest if c is not first[0]] if first else rest
+    rest, other_game = for_this_game(rest, game)
     problems = []
     for choice in first + rest:
         try:
-            message, key = install_one(choice, game, state)
+            message, key = install_one(choice, game, state, replaces)
         except Problem as error:
             problems.append((choice, error))
             continue
@@ -247,7 +287,7 @@ def install_first(choices, game, state):
             message += f" ({SOURCE_NAMES.get(failed.get('source') or failed.get('site'), 'The first site')} didn't work: {error})"
         return message, key
     advice = " You can download it from the addon's page and add the .zip." if skipped else ""
-    raise Problem(" ".join([str(problems[0][1])] + skipped) + advice)
+    raise Problem(" ".join([str(problems[0][1])] + skipped + other_game) + advice)
 
 
 def install(request):
@@ -262,7 +302,8 @@ def install(request):
         site = ("wowinterface", wowi) if wowi else ("curseforge", project) if project else (None, None)
         if site[1]:
             choices = [dict(request, site=site[0], id=site[1])] + other_sites(catalog.load_entries()).get((site[0], str(site[1]).lower()), [])
-    message, key = install_first(choices, game, state)
+    replaces = request.get("replaces") if isinstance(request.get("replaces"), str) else None
+    message, key = install_first(choices, game, state, replaces)
     return {"message": " ".join([message] + add_requirements(game, state, [key]))}
 
 
@@ -275,22 +316,36 @@ def requirements(request):
 SOURCE_NAMES = {"wowinterface": "WoWInterface", "curseforge": "CurseForge"}
 
 
+def is_newer(source, latest, row, record):
+    """Whether a site's newest file is newer than the installed copy: True, False, or None when
+    the versions can't be ordered. Only True counts as an update, so one never goes back a version.
+
+    latest has the file's "version", plus "fileId" from CurseForge or "updated" from WoWInterface.
+    """
+    if record and record["source"] == source:
+        if source == "curseforge" and record.get("fileId") and latest.get("fileId"):
+            return latest["fileId"] > record["fileId"]  # CurseForge numbers files in upload order.
+        if source == "wowinterface" and record.get("updated") and latest.get("updated"):
+            return latest["updated"] > record["updated"]
+        installed = record.get("version") or row["tocVersion"]
+    else:
+        # A hand install, or another site's copy of the addon: only the version says which is newer.
+        installed = row["tocVersion"]
+    order = sources.compare_versions(latest.get("version"), installed)
+    return None if order is None else order > 0
+
+
 def newest(link, row, record, game, wowi):
-    """(latest version, whether it's newer than the installed copy) from one source."""
-    source, ident, installed = link["source"], link["id"], row["tocVersion"]
+    """(latest version, whether it's newer than the installed copy, per is_newer) from one source."""
+    source, ident = link["source"], link["id"]
     if source == "wowinterface":
         entry = wowi.get(ident)
         if not entry:
             raise Problem("not listed in the WoWInterface catalog.")
-        if record:
-            return entry["version"], entry["updated"] > record.get("updated", 0) or entry["version"] != record.get("version")
-        return entry["version"], not sources.same_version(entry["version"], installed)
-    project = (record or {}).get("projectId") or ident
-    release = sources.curseforge_release(catalog.curseforge_id(project), game, catalog.curseforge_updated(project))
-    if record:
-        return release["version"], release["fileId"] != record.get("fileId")
-    # Hand installs have no record, so compare with the version in their TOC.
-    return release["version"], not sources.same_version(release["version"], installed)
+        return entry["version"], is_newer(source, entry, row, record)
+    project = (record or {}).get("projectId") if (record or {}).get("source") == source else None
+    release = sources.curseforge_release(catalog.curseforge_id(project or ident), game, catalog.curseforge_updated(project or ident))
+    return release["version"], is_newer(source, release, row, record)
 
 
 def other_sites(entries):
@@ -306,15 +361,25 @@ def other_sites(entries):
     return index
 
 
-def with_fallbacks(row, index):
+def with_fallbacks(row, index, game):
     """An addon's own site first, then the same addon on the other site, in case the first can't answer.
-    A site whose listing is far behind the newest one is left out, so it can't offer an older version."""
+
+    Only the site this app installed the addon from is trusted as is. Any other site, including
+    ones a hand install's TOC names, must list the addon for this game, so an update never brings
+    another game's build. A site whose listing is far behind the newest one is left out too, so
+    it can't offer an older version.
+    """
     links = list(row["links"])
     for link in list(links):
         for other in index.get((link["source"], str(link["id"]).lower()), []):
             if all(other["source"] != l["source"] for l in links):
                 links.append(other)
-    return current_choices(links)[0]
+    own = links[:1] if row["managed"] else []
+    return current_choices(own + [l for l in links[len(own):] if listed_for(l, game)])[0]
+
+
+def unlisted(row, game):
+    return f"Neither site lists {row['name']} for {game.get('name', 'this game')}, so it isn't updated from them."
 
 
 def check(request):
@@ -327,36 +392,42 @@ def check(request):
     state = library.load_state()
     rows = [r for r in library.list_addons(game, state) if r["links"]]
     records = {r["key"]: r for r in library.packages(state, game)}
-    index = other_sites(catalog.load_entries())
-    wowi = {}
-    if any(link["source"] == "wowinterface" for r in rows for link in with_fallbacks(r, index)):
+    if rows:
+        # Which game each site lists an addon for comes from the catalog, and WoWInterface's versions too.
         try:
             catalog.refresh(force=bool(request.get("force")), max_age=3600)
         except Problem:
             pass  # Each affected addon reports the catalog as missing.
-        wowi = {e["id"]: e for e in catalog.source_entries("wowinterface")}
+    index = other_sites(catalog.load_entries())
+    wowi = {e["id"]: e for e in catalog.source_entries("wowinterface")}
     checks = {}
     for row in rows:
+        links = with_fallbacks(row, index, game)
+        if not links:
+            checks[row["id"]] = {"state": "unknown", "message": unlisted(row, game)}
+            continue
         problems = []
-        for link in with_fallbacks(row, index):
-            # An install record only describes the site it came from; elsewhere, compare with the installed version.
-            record = records.get(row["id"])
-            record = record if record and record["source"] == link["source"] else None
+        for link in links:
             try:
-                latest, newer = newest(link, row, record, game, wowi)
-                checks[row["id"]] = {"state": "available" if newer else "current", "latest": latest, "source": link["source"]}
+                latest, newer = newest(link, row, records.get(row["id"]), game, wowi)
+                checks[row["id"]] = {"state": {True: "available", False: "current"}.get(newer, "unknown"), "latest": latest, "source": link["source"]}
+                if newer is None:
+                    checks[row["id"]]["message"] = (f"{SOURCE_NAMES[link['source']]} has {latest}, but it isn't clear whether that's newer than "
+                                                    f"yours ({row['version'] or 'no version'}), so it isn't offered as an update.")
                 break
             except Problem as error:
                 problems.append(f"{SOURCE_NAMES[link['source']]}: {error}")
         else:
             checks[row["id"]] = {"state": "error", "message": " ".join(problems)}
-    return {"checks": checks}
+    # The window may have switched games while this ran; this says which game the results are for.
+    return {"checks": checks, "game": game["addons"]}
 
 
 def update(request):
     _, game = current_game()
     state = library.load_state()
     rows = {r["id"]: r for r in library.list_addons(game, state)}
+    records = {r["key"]: r for r in library.packages(state, game)}
     index = other_sites(catalog.load_entries())
     preferred = request.get("sources") or {}
     results = []
@@ -366,11 +437,15 @@ def update(request):
             results.append({"id": key, "ok": False, "message": f"{row['name'] if row else key}: no source to update from."})
             continue
         # Start with the source whose check found the update.
-        links = sorted(with_fallbacks(row, index), key=lambda link: link["source"] != preferred.get(key))
+        links = sorted(with_fallbacks(row, index, game), key=lambda link: link["source"] != preferred.get(key))
+        if not links:
+            results.append({"id": key, "ok": False, "message": unlisted(row, game)})
+            continue
         problems = []
         for link in links:
             try:
-                message, new_key = install_one({"source": link["source"], "id": link["id"]}, game, state)
+                message, new_key = install_one({"source": link["source"], "id": link["id"]}, game, state,
+                                               replaces=key, installed=(row, records.get(key)))
                 results.append({"id": key, "ok": True, "message": " ".join([message] + add_requirements(game, state, [new_key]))})
                 break
             except Problem as error:

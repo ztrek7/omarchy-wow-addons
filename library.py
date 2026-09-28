@@ -40,10 +40,7 @@ def load_state():
 
 
 def save_state(state):
-    STATE.parent.mkdir(parents=True, exist_ok=True)
-    temporary = STATE.with_suffix(".tmp")
-    temporary.write_text(json.dumps(state, indent=2) + "\n")
-    temporary.replace(STATE)
+    wowdir.write_atomic(STATE, json.dumps(state, indent=2) + "\n")
 
 
 def packages(state, game):
@@ -162,6 +159,7 @@ def row(key, dirs, present, meta, record):
         "path": entries[[e["name"] for e in entries].index(main)]["path"],
         # Where updates are checked, in order of preference. Hand installs use what their TOC declares.
         "links": links,
+        "requires": needs,
         "missing": missing,
         "requiresDisabled": turned_off,
     }
@@ -208,12 +206,19 @@ def trash(path):
     return files / name
 
 
+def copies(game, name):
+    """Every copy of a folder: the listing shows one when both AddOns and AddOns.disabled have it."""
+    return [base / name for base in locations(game) if (base / name).is_dir()]
+
+
 def remove(game, key, state=None):
     state = load_state() if state is None else state
     target = find_row(game, key, state)
     records = packages(state, game)
     for d in target["dirs"]:
-        trash(d["path"])
+        # Trash the hidden copy too, or it would reappear as a disabled addon.
+        for path in copies(game, d["name"]):
+            trash(path)
     records[:] = [r for r in records if r["key"] != key]
     save_state(state)
     note = " Its saved settings stay in WTF." if target["savedVariables"] else ""
@@ -221,37 +226,47 @@ def remove(game, key, state=None):
     return f"Moved {target['name']} to the trash ({count} folder{'s' if count != 1 else ''}).{note}"
 
 
-def install(game, staged, record, state=None):
+def install(game, staged, record, state=None, replaces=None):
     """Move staged addon folders into place.
 
     staged maps folder name -> extracted path on the same filesystem as AddOns.
-    Folders keep their current enabled/disabled location; existing copies go to
-    the trash. Folders the previous version had but this one doesn't are trashed too.
+    replaces is the installed addon this one takes over, when it comes from a
+    different site than before (an update that fell back to the other site).
+    Folders keep their current enabled/disabled location, and new ones stay off
+    when the whole package was turned off. Existing copies go to the trash, and
+    so do folders the previous version had but this one doesn't.
     """
     state = load_state() if state is None else state
+    old = next((r for r in list_addons(game, state) if r["id"] == (replaces or record["key"])), None)
     records = packages(state, game)
     enabled, disabled = locations(game)
     enabled.mkdir(parents=True, exist_ok=True)
     present = folders(game)
-    previous = next((r for r in records if r["key"] == record["key"]), None)
+    keys = {record["key"], replaces or record["key"]}
+    previous = [r for r in records if r["key"] in keys]
+    was_off = bool(old) and old["state"] == "disabled"
     replaced = []
     for name, source in staged.items():
-        destination = enabled
+        destination = disabled if was_off else enabled
         if name in present:
-            path, is_enabled = present[name]
-            destination = enabled if is_enabled else disabled
-            trash(path)
+            destination = enabled if present[name][1] else disabled
+            for path in copies(game, name):
+                trash(path)
             replaced.append(name)
+        destination.mkdir(exist_ok=True)
         os.rename(source, destination / name)
-    retired = [d for d in (previous or {}).get("dirs", []) if d not in staged and d in present]
+    # Only folders an install here put in place are retired; a hand install's grouping is a guess.
+    retired = sorted({d for r in previous for d in r["dirs"] if d not in staged and d in present}, key=str.lower)
     for name in retired:
-        trash(present[name][0])
+        for path in copies(game, name):
+            trash(path)
     # A folder belongs to one package; the newest install takes it over.
     for other in records:
-        if other["key"] != record["key"]:
+        if other["key"] not in keys:
             other["dirs"] = [d for d in other["dirs"] if d not in staged]
-    records[:] = [r for r in records if r["key"] != record["key"] and r["dirs"]]
-    record = dict(record, dirs=sorted(staged, key=str.lower), installedAt=(previous or {}).get("installedAt") or now())
+    records[:] = [r for r in records if r["key"] not in keys and r["dirs"]]
+    first = next((r.get("installedAt") for r in previous if r.get("installedAt")), None)
+    record = dict(record, dirs=sorted(staged, key=str.lower), installedAt=first or now())
     if previous:
         record["updatedAt"] = now()
     records.append(record)

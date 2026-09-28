@@ -33,16 +33,45 @@ MAX_UNPACKED = 1024 * 1024 * 1024
 MAX_FILES = 40000
 
 
-def fetch(url, limit=64 * 1024 * 1024, accept="application/json"):
+# The only hosts anything is fetched from. Redirects must stay among them too.
+API_HOSTS = ("api.mmoui.com", "api.cfwidget.com", "raw.githubusercontent.com")
+# Addon files: WoWInterface's downloads, and CurseForge's CDN (edge.forgecdn.net redirects to mediafilez.forgecdn.net).
+DOWNLOAD_HOSTS = ("wowinterface.com", "forgecdn.net")
+
+
+def trusted(url, hosts):
+    """Whether url is HTTPS on one of hosts or a subdomain of one."""
+    parts = urllib.parse.urlsplit(url)
+    host = (parts.hostname or "").lower()
+    return parts.scheme == "https" and any(host == h or host.endswith("." + h) for h in hosts)
+
+
+class TrustedRedirects(urllib.request.HTTPRedirectHandler):
+    """Refuse a redirect before following it, unless it stays on a trusted host."""
+
+    def __init__(self, hosts):
+        self.hosts = hosts
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not trusted(newurl, self.hosts):
+            fp.close()
+            raise Problem(f"{urllib.parse.urlsplit(req.full_url).hostname} redirected to {urllib.parse.urlsplit(newurl).hostname or 'another site'}, which this app doesn't download from.")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fetch(url, limit=64 * 1024 * 1024, accept="application/json", hosts=API_HOSTS):
     if urllib.parse.urlsplit(url).scheme != "https":
         raise Problem("Only HTTPS downloads are allowed.")
+    if not trusted(url, hosts):
+        raise Problem(f"{urllib.parse.urlsplit(url).hostname or 'That link'} isn't a site this app downloads from.")
     # Ask for compressed JSON: CurseForge project data shrinks about tenfold.
     headers = {"User-Agent": USER_AGENT, "Accept": accept, "Accept-Encoding": "gzip"}
     request = urllib.request.Request(url, headers=headers)
+    opener = urllib.request.build_opener(TrustedRedirects(hosts))
     try:
-        with urllib.request.urlopen(request, timeout=45) as response:
-            if urllib.parse.urlsplit(response.geturl()).scheme != "https":
-                raise Problem("The download redirected away from HTTPS.")
+        with opener.open(request, timeout=45) as response:
+            if not trusted(response.geturl(), hosts):
+                raise Problem("The download was redirected to a site this app doesn't download from.")
             data = response.read(limit + 1)
             if response.headers.get("Content-Encoding", "").lower() == "gzip" and len(data) <= limit:
                 try:
@@ -105,6 +134,57 @@ def same_version(a, b):
 
 def version_key(value):
     return [int(part) if part.isdigit() else 0 for part in value.split(".")]
+
+
+VERSION_PARTS = re.compile(r"^v?(\d+(?:\.\d+)*)(.*)$")
+# Tags that come before a release: 2.0-beta2 is older than 2.0. Order matters: alpha < beta < rc.
+PRERELEASE = ("alpha", "beta", "rc")
+# A bare letter isn't one: addon authors write 1.2a for a fix after 1.2. With a number (1.2b3) it's a beta.
+PRERELEASE_TAG = re.compile(r"^(?:(alpha|beta|rc|pre|preview)[.-]?(\d*)|(a|b)(\d+))$")
+RELEASE_TAG = re.compile(r"^(release|stable|final)?$")
+
+
+def compare_versions(a, b):
+    """1 if version a is newer than b, -1 if older, 0 if the same, None if that can't be told.
+
+    The numbers come first (2.1-beta is newer than 2.0), then any tag after them:
+    a release is newer than its alphas, betas, and release candidates, and tags
+    shaped alike compare by their numbers or letters (-r45 is newer than -r44,
+    1.2b newer than 1.2a). Anything else is unclear, since a guess could offer
+    an older file as an update.
+    """
+    if same_version(a, b):
+        return 0
+    parsed = [VERSION_PARTS.match(str(v or "").strip().lower()) for v in (a, b)]
+    if not all(parsed):
+        return None
+    (numbers_a, tag_a), (numbers_b, tag_b) = [([int(n) for n in m.group(1).split(".")], m.group(2).strip(" ._-+")) for m in parsed]
+    width = max(len(numbers_a), len(numbers_b))
+    numbers_a += [0] * (width - len(numbers_a))
+    numbers_b += [0] * (width - len(numbers_b))
+    if numbers_a != numbers_b:
+        return 1 if numbers_a > numbers_b else -1
+    rank_a, rank_b = tag_rank(tag_a), tag_rank(tag_b)
+    if rank_a is not None and rank_b is not None:
+        return (rank_a > rank_b) - (rank_a < rank_b)
+    # Tags shaped alike, like r44 and r45 or a and b, compare piece by piece.
+    shape = lambda tag: re.sub(r"\d+", "#", re.sub(r"(?<![a-z])[a-z](?![a-z])", "@", tag))
+    if tag_a and tag_b and shape(tag_a) == shape(tag_b):
+        pieces = [[int(p) if p.isdigit() else p for p in re.findall(r"\d+|[a-z]+", tag)] for tag in (tag_a, tag_b)]
+        return (pieces[0] > pieces[1]) - (pieces[0] < pieces[1])
+    return None
+
+
+def tag_rank(tag):
+    """How a known tag after the numbers sorts: a release above its prereleases. None for other tags."""
+    if RELEASE_TAG.match(tag):
+        return (len(PRERELEASE), 0)
+    match = PRERELEASE_TAG.match(tag)
+    if not match:
+        return None
+    word, number = (match.group(1), match.group(2)) if match.group(1) else (match.group(3), match.group(4))
+    kind = {"a": "alpha", "b": "beta", "pre": "rc", "preview": "rc"}.get(word, word)
+    return (PRERELEASE.index(kind), int(number or 0))
 
 
 BBCODE_LINK = re.compile(r"\[url=\"?([^\]\"]*)\"?\](.*?)\[/url\]", re.IGNORECASE | re.DOTALL)
@@ -271,7 +351,7 @@ def curseforge_release(project, game, listed_updated=0):
 # --- Archives ---------------------------------------------------------------
 
 def download(url, destination, md5="", size=0):
-    data = fetch(url, limit=MAX_DOWNLOAD, accept="application/octet-stream, application/zip, */*")
+    data = fetch(url, limit=MAX_DOWNLOAD, accept="application/octet-stream, application/zip, */*", hosts=DOWNLOAD_HOSTS)
     if md5 and hashlib.md5(data).hexdigest() != md5.lower():
         raise Problem("The download didn't match WoWInterface's checksum. Nothing was installed.")
     if size and len(data) != size:

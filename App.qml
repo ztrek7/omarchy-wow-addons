@@ -124,6 +124,7 @@ Scope {
         if (demo || checkWorker.running || !game) return
         checkWorker.output = ""
         checkWorker.auto = !force
+        checkWorker.forGame = game.addons
         if (force) status = "Checking for updates…"
         checkWorker.command = ["python3", helper(), JSON.stringify({action: "check", force: !!force})]
         checkWorker.running = true
@@ -165,6 +166,8 @@ Scope {
         let row = installedRowFor(entry)
         let clashes = entry.dirs.filter(d => folderOwners[d] && folderOwners[d] !== row)
         let request = {action: "install", source: ref.source, id: ref.id, alternatives: (alternatives || []).map(r => ({source: r.source, id: r.id}))}
+        // Installing an installed addon from its other site replaces that copy, modules and all.
+        if (row) request.replaces = row
         if (clashes.length) confirm("replace", {name: entry.name, clashes: clashes, request: request})
         else execute(request)
     }
@@ -227,14 +230,22 @@ Scope {
         if (!data.ok) { log(data.error || "The operation failed.", true); return }
         let action = request.action
         if (action === "list") {
+            let before = game?.addons
             setup = data.setup
             addons = data.addons
             gameRunning = data.gameRunning
             if (data.setup.sources) sourceOn = data.setup.sources
             downloads = data.downloads || []
-            let kept = {}
-            addons.forEach(a => { if (checks[a.id]) kept[a.id] = checks[a.id] })
-            checks = kept
+            if (game?.addons !== before) {
+                // Another game (or folder): its addons share ids with this one's, so its update results don't apply.
+                checks = {}
+                lastChecked = ""
+                autoChecked = false
+            } else {
+                let kept = {}
+                addons.forEach(a => { if (checks[a.id]) kept[a.id] = checks[a.id] })
+                checks = kept
+            }
             if (!game) log("No World of Warcraft install found. Choose its folder in Settings.", true)
             else if (!followUp) status = addons.length + " addons in " + gameLabel() + " · " + enabledCount + " enabled"
             followUp = false
@@ -267,18 +278,27 @@ Scope {
     }
     property bool followUp: false
     function finishCheck(data, auto) {
+        // The game was switched while this ran, so whatever it found (or failed at) is for the old one: check the new one.
+        if (checkWorker.forGame !== (game?.addons || "")) {
+            if (game) Qt.callLater(() => checkUpdates(!auto))
+            return
+        }
+        // The helper saw a different game than the window; the list refresh that follows a switch checks again.
+        if (data.ok && data.game !== game?.addons) return
         if (!data.ok) { log("Couldn't check for updates. " + (data.error || ""), !auto); return }
         checks = data.checks
         lastChecked = new Date().toLocaleTimeString(Qt.locale(), Locale.ShortFormat)
         let checked = Object.keys(data.checks)
         let failures = checked.filter(k => data.checks[k].state === "error")
+        let unclear = checked.filter(k => data.checks[k].state === "unknown")
         failures.forEach(k => log((addons.find(a => a.id === k)?.name || k) + " couldn't be checked. " + data.checks[k].message, true))
         let count = updateIds.length
         let summary = !checked.length ? "No addons with an update source to check."
             : count ? count + (count === 1 ? " update available" : " updates available")
-            : "All " + checked.length + " checked addons are up to date"
+            : "All " + (checked.length - failures.length - unclear.length) + " checked addons are up to date"
         // Automatic checks don't turn the status red; failures stay listed in Activity.
-        log(summary + (failures.length ? " · " + failures.length + " couldn't be checked (see Activity)" : ""), failures.length > 0 && !auto)
+        log(summary + (failures.length ? " · " + failures.length + " couldn't be checked (see Activity)" : "")
+            + (unclear.length ? " · " + unclear.length + " couldn't be compared (see each addon)" : ""), failures.length > 0 && !auto)
     }
     property bool autoChecked: false
     readonly property bool checking: checkWorker.running
@@ -330,6 +350,7 @@ Scope {
         id: checkWorker
         property string output: ""
         property bool auto: false
+        property string forGame: ""
         stdout: SplitParser { onRead: data => checkWorker.output += data + "\n" }
         onExited: {
             let data

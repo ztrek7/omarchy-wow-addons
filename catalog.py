@@ -43,10 +43,7 @@ def read(path):
 
 
 def write(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(data, separators=(",", ":")))
-    temporary.replace(path)
+    wowdir.write_atomic(path, json.dumps(data, separators=(",", ":")))
 
 
 # --- Fetching each source ----------------------------------------------------
@@ -114,6 +111,14 @@ def listing(source, ident):
                 index[e["numericId"]] = e
         _LISTINGS[source] = (stamp, index)
     return _LISTINGS[source][1].get(str(ident).lower(), {})
+
+
+def listed_games(source, entry):
+    """The games a site lists an addon for. WoWInterface lists patch numbers, so name the
+    game each belongs to the way CurseForge tags them: 1.13.2 is Classic Era, 1.60.1 is Forever."""
+    if source == "curseforge":
+        return sorted(entry.get("flavours") or [])
+    return sorted({f for f in (wowdir.game_flavour(v) for v in entry.get("gameVersions") or []) if f})
 
 
 def _curseforge_listing(ident):
@@ -280,11 +285,8 @@ def source_ref(source, entry):
     if source == "curseforge":
         ref.update(flavours=entry["flavours"], numericId=entry["numericId"])
     else:
-        # WoWInterface lists patch numbers. Name the game each belongs to, the
-        # way CurseForge tags them: 1.13.2 is Classic Era, 1.60.1 is Forever.
-        versions = entry.get("gameVersions", [])
-        ref.update(gameVersions=versions, version=entry.get("version", ""),
-                   flavours=sorted({f for f in (wowdir.game_flavour(v) for v in versions) if f}))
+        ref.update(gameVersions=entry.get("gameVersions", []), version=entry.get("version", ""),
+                   flavours=listed_games(source, entry))
     if source == "wowinterface":
         ref.update(monthly=entry.get("monthly", 0), favorites=entry.get("favorites", 0))
     return ref

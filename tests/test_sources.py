@@ -36,6 +36,35 @@ class Text(FakeInstall):
         with self.assertRaises(sources.Problem):
             sources.fetch("http://example.invalid/x.zip")
 
+    def test_only_trusted_hosts(self):
+        self.assertTrue(sources.trusted("https://mediafilez.forgecdn.net/files/1/2/a.zip", sources.DOWNLOAD_HOSTS))
+        self.assertTrue(sources.trusted("https://cdn.wowinterface.com/downloads/getfile.php?id=1", sources.DOWNLOAD_HOSTS))
+        for url in ("https://evilforgecdn.net/a.zip", "https://forgecdn.net.example/a.zip", "http://cdn.wowinterface.com/a.zip",
+                    "https://api.cfwidget.com/wow/addons/x"):
+            self.assertFalse(sources.trusted(url, sources.DOWNLOAD_HOSTS), url)
+        # Refused before any request is made; the test install fails on network access.
+        with self.assertRaises(sources.Problem):
+            sources.download("https://example.invalid/a.zip", self.home / "a.zip")
+        with self.assertRaises(sources.Problem):
+            sources.fetch("https://edge.forgecdn.net/files/1/2/a.zip")  # A download host isn't an API host.
+
+    def test_redirects_must_stay_on_trusted_hosts(self):
+        import urllib.request
+        handler = sources.TrustedRedirects(sources.DOWNLOAD_HOSTS)
+        request = urllib.request.Request("https://edge.forgecdn.net/files/1/2/a.zip")
+        followed = handler.redirect_request(request, None, 302, "Found", {}, "https://mediafilez.forgecdn.net/files/1/2/a.zip")
+        self.assertEqual(followed.full_url, "https://mediafilez.forgecdn.net/files/1/2/a.zip")
+
+        class Body:
+            closed = False
+            def close(self):
+                self.closed = True
+        body = Body()
+        with self.assertRaises(sources.Problem) as caught:
+            handler.redirect_request(request, body, 302, "Found", {}, "https://example.invalid/a.zip")
+        self.assertIn("example.invalid", str(caught.exception))
+        self.assertTrue(body.closed)
+
 
 class CurseForge(FakeInstall):
     def test_wowinterface_page(self):
@@ -97,6 +126,16 @@ class CurseForge(FakeInstall):
             sources.download("https://example.invalid/a.zip", self.home / "ok.zip", size=5)
             with self.assertRaises(sources.Problem):
                 sources.download("https://example.invalid/a.zip", self.home / "bad.zip", size=6)
+
+    def test_compare_versions(self):
+        for newer, older in (("v12.0.1", "6.2.5"), ("2.0", "1.0"), ("2.0", "2.0-rc1"), ("2.0-rc1", "2.0-beta3"), ("2.0-beta10", "2.0-beta2"),
+                             ("2.0b3", "2.0a5"), ("1.2b", "1.2a"), ("1.15.7-r45", "1.15.7-r44"), ("2.1-beta", "2.0"), ("2.0", "1.9-beta")):
+            self.assertEqual(sources.compare_versions(newer, older), 1, (newer, older))
+            self.assertEqual(sources.compare_versions(older, newer), -1, (older, newer))
+        self.assertEqual(sources.compare_versions("2.0", "v2.0.0-release"), 0)
+        # A guess could offer an older file, so these can't be ordered: 1.2a is a fix after 1.2, not an alpha.
+        for a, b in (("1.2a", "1.2"), ("1.15.7-r45", "1.15.7"), ("339-1-g23f0261", "339"), ("@project-version@", "1.0"), ("1.0", "")):
+            self.assertIsNone(sources.compare_versions(a, b), (a, b))
 
     def test_same_version(self):
         self.assertTrue(sources.same_version("v1.2", "1.2 "))

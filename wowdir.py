@@ -1,8 +1,9 @@
-"""Find World of Warcraft installs and read addon metadata. Never writes."""
+"""Find World of Warcraft installs and read addon metadata. Never writes to the game folder."""
 import json
 import os
 from pathlib import Path
 import re
+import tempfile
 
 HOME = Path.home()
 CONFIG = Path(os.environ.get("XDG_CONFIG_HOME") or HOME / ".config") / "wow-addons" / "config.json"
@@ -50,11 +51,23 @@ def load_config():
         return {}
 
 
+def write_atomic(path, text):
+    """Replace a file in one step. Each writer gets its own temporary file, so two helpers
+    running at once (a catalog load and an update check) can't trip over each other."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(handle, "w") as out:
+            out.write(text)
+        os.replace(temporary, path)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
+
+
 def save_config(data):
-    CONFIG.parent.mkdir(parents=True, exist_ok=True)
-    temporary = CONFIG.with_suffix(".tmp")
-    temporary.write_text(json.dumps(data, indent=2) + "\n")
-    temporary.replace(CONFIG)
+    write_atomic(CONFIG, json.dumps(data, indent=2) + "\n")
 
 
 def candidate_roots(home=None):

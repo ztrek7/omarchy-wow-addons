@@ -85,6 +85,18 @@ class Refresh(FakeInstall):
             return [{"UICATID": "1", "UICATTitle": "Map"}]
         raise AssertionError(url)
 
+    def test_writers_running_at_once_do_not_collide(self):
+        # The catalog load and an update check can both refresh an expired catalog.
+        from concurrent.futures import ThreadPoolExecutor
+        path = catalog.merged_file()
+        def write(n):
+            for i in range(40):
+                catalog.write(path, {"entries": [n, i]})
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(write, range(8)))  # Re-raises any writer's error.
+        self.assertEqual(len(json.loads(path.read_text())["entries"]), 2)
+        self.assertEqual([p.name for p in path.parent.iterdir()], [path.name])  # No temporary files left.
+
     def test_refresh_merges_and_caches(self):
         with patch.object(sources, "fetch_json", side_effect=self.fake) as fetch:
             result = catalog.refresh()

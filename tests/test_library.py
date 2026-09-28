@@ -101,6 +101,39 @@ class RemoveAndInstall(FakeInstall):
         row = library.list_addons(self.game)[0]
         self.assertEqual((row["version"], row["state"]), ("v2", "disabled"))
 
+    def test_update_of_disabled_addon_keeps_new_modules_off(self):
+        record = {"key": "wowi:3", "source": "wowinterface", "sourceId": "3", "name": "Core", "version": "1"}
+        library.install(self.game, self.stage("Core"), record)
+        library.set_enabled(self.game, "wowi:3", False)
+        library.install(self.game, self.stage("Core", "Core_NewModule", version="2"), dict(record, version="2"))
+        disabled = self.addons.parent / "AddOns.disabled"
+        self.assertTrue((disabled / "Core").is_dir() and (disabled / "Core_NewModule").is_dir())
+        self.assertFalse((self.addons / "Core_NewModule").exists())
+        self.assertEqual(library.list_addons(self.game)[0]["state"], "disabled")
+
+    def test_switching_sites_retires_the_old_package(self):
+        curse = {"key": "curseforge:b", "source": "curseforge", "sourceId": "b", "name": "B", "version": "1"}
+        library.install(self.game, self.stage("B", "B_Old"), curse)
+        wowi = {"key": "wowi:4", "source": "wowinterface", "sourceId": "4", "name": "B", "version": "2"}
+        result = library.install(self.game, self.stage("B", version="2"), wowi, replaces="curseforge:b")
+        self.assertEqual(result["retired"], ["B_Old"])
+        self.assertFalse((self.addons / "B_Old").exists())
+        self.assertEqual([(r["id"], [d["name"] for d in r["dirs"]]) for r in library.list_addons(self.game)], [("wowi:4", ["B"])])
+
+    def test_new_install_beside_a_disabled_addon_is_on(self):
+        make_addon(self.addons.parent / "AddOns.disabled", "Other")
+        record = {"key": "wowi:5", "source": "wowinterface", "sourceId": "5", "name": "Fresh"}
+        library.install(self.game, self.stage("Fresh"), record)
+        self.assertTrue((self.addons / "Fresh").is_dir())
+
+    def test_remove_trashes_a_hidden_disabled_copy(self):
+        make_addon(self.addons, "Bags")
+        make_addon(self.addons.parent / "AddOns.disabled", "Bags")
+        message = library.remove(self.game, "local:Bags")
+        self.assertIn("Moved Bags to the trash", message)
+        self.assertFalse((self.addons.parent / "AddOns.disabled/Bags").exists())
+        self.assertEqual(library.list_addons(self.game), [])
+
     def test_folders_deleted_outside_app_drop_record(self):
         record = {"key": "wowi:9", "source": "wowinterface", "sourceId": "9", "name": "Gone"}
         library.install(self.game, self.stage("Gone"), record)

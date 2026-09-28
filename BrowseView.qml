@@ -69,7 +69,8 @@ Item {
     }
     // Browse sources the user has on. Wago only appears as a page link in details.
     function usable(e) { return e.sources.filter(r => app.sourceOn[r.source] === true) }
-    // Where Install gets it: a site listing it for this game, most recently updated. The rest are fallbacks.
+    // Where Install gets it: a site listing it for this game, most recently updated. Other sites that
+    // list it for this game are fallbacks; one listing it only for another game would bring the wrong build.
     function rankedRefs(e) {
         return usable(e).sort((a, b) => root.fitsRef(b) - root.fitsRef(a) || (b.updated || 0) - (a.updated || 0))
     }
@@ -95,7 +96,7 @@ Item {
         else if (ref) app.installEntry(e, ref, [])  // The user picked this site.
         else if (state !== "installed") {
             let ranked = rankedRefs(e)
-            app.installEntry(e, ranked[0], ranked.slice(1))
+            app.installEntry(e, ranked[0], ranked.slice(1).filter(r => root.fitsRef(r)))
         }
     }
     function openDetails(e) {
