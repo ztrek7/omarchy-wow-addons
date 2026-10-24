@@ -6,7 +6,9 @@ An addon manager for World of Warcraft on [Omarchy](https://omarchy.org). Browse
 
 ## Install
 
-You need Omarchy 4 or newer. It already has everything the app uses (Quickshell and Python), so there's nothing else to install.
+Built for Omarchy 4.x with Quickshell and Python 3. The installer checks for
+both commands and Omarchy's shell theme module at
+`/usr/share/omarchy/shell/Commons`.
 
 ```bash
 git clone https://github.com/ztrek7/omarchy-wow-addons
@@ -14,59 +16,72 @@ cd omarchy-wow-addons
 python3 scripts/install.py
 ```
 
-Open **WoW Addons** from the app launcher (Super + Space).
+Open **WoW Addons** from the app launcher (**Super + Space**).
 
-To remove the app later, run `python3 scripts/install.py --uninstall`. Your addons stay where they are.
+## Use
 
-## How it works
+1. Choose your game in **Browse** or **Settings**. The app looks in common Wine
+   and Proton prefixes; if it misses yours, choose the World of Warcraft folder
+   in Settings. Check the detected game and version before installing addons.
+2. Search or filter **Browse**, select an addon, and install it. The app also
+   tries to install required addons from its supported sources.
+3. Use **Installed** to update, disable, or remove addons. Updates are checked
+   when the app opens and every six hours while it stays open.
 
 ![Installed addons with their versions and status, and details for Questie](assets/installed.png)
 
-**Finding your game.** The app looks for World of Warcraft in Wine and Proton prefixes, such as the Battle.net install that comes with Omarchy. It lists every version it finds, like WoW Retail, WoW Classic, WoW Classic Era, WoW Forever, and their PTRs and betas. Switch between them from the menu in Browse or in Settings. If your game is somewhere unusual, point the app at the folder in Settings.
+Disabling moves addon folders to `Interface/AddOns.disabled`, affecting every
+character. Removed or replaced addons go to the trash; settings in the game's
+`WTF` folder are left alone. If WoW is open, type `/reload` after changes.
 
-**Browsing.** Browse lists about 17,000 addons from CurseForge and WoWInterface together. An addon that's on both sites shows up once, with a logo for each site. You can search, filter by category or last update, hide what you already have, and sort by downloads, date, or name. It only shows addons the site lists for the game you picked, unless you choose "Any game version". Each card says which game the addon is listed for, taken straight from the site. Addons listed for an older game often still work, but the app won't claim they were made for yours. Either site can be turned off.
+## Sources and limits
 
-**Installing.** Install gets the newest stable release listed for your game, from whichever site has it. If the addon needs other addons to work, those get installed too. If something is already in the way, the old copy goes to the trash first.
+- **CurseForge and WoWInterface** are the supported download sources. Wago
+  downloads and arbitrary download links are not supported.
+- Game labels come from the sites' listings, not a promise that an addon works
+  with your client. **Any game version** can expose addons listed for other games.
+- CurseForge listings depend on community catalog data and CFWidget. When a
+  file list is stale, the app refuses it and may use a suitable WoWInterface
+  listing instead. If neither works, download the ZIP yourself and add it.
+- **ZIPs imported through the app do not receive automatic updates.** Addons
+  copied into the game by hand can be checked when their metadata identifies a
+  supported source that lists them for your game.
+- If two version strings cannot be reliably ordered, the app reports that
+  instead of offering a possible downgrade.
 
-**Updating.** The app checks for updates when it opens and every six hours while it's open. You can update one addon or all of them. Addons you copied in by hand get checked too, as long as their files say which CurseForge or WoWInterface page they came from and that site lists them for your game. If the app can't tell whether a site's version is newer than yours, like 2.0 against 2.0-12-gabc123, it says so instead of offering it as an update.
+See the [reference](docs/REFERENCE.md) for catalog behavior and stored files.
 
-**Turning addons off.** Turning an addon off moves its folder from `Interface/AddOns` to `Interface/AddOns.disabled`, so it's off for every character. Turning it back on moves it back. You can still turn addons on and off per character from the in-game AddOns list.
+## Update the manager
 
-**Removing.** Removed addons go to the trash, so you can get them back. Your addon settings (in the game's `WTF` folder) are never touched.
-
-WoW only loads addons at login. If the game is open, type `/reload` after making changes.
-
-## Where the addons come from
-
-Only CurseForge and WoWInterface, the two big addon sites. Files always download straight from them, and each download is checked against the size or checksum the site lists. Nothing comes from GitHub or other random links. You can also add a `.zip` you downloaded yourself.
-
-WoWInterface has a public list of its addons. CurseForge only gives API keys to approved apps. So the CurseForge list comes from the public catalog the [instawow](https://github.com/layday/instawow-data) project publishes every day, plus [CFWidget](https://www.cfwidget.com/) for logos, details, and file lists. Other managers that don't ask for a key work the same way.
-
-CFWidget's copy of a project occasionally stops updating. The app checks each file list against the catalog's last-updated date and won't install an old version from a stale copy. If WoWInterface has an up-to-date copy of the same addon, listed for your game, it installs that instead and tells you. If not, it says so, and you can download the addon from its page and add the `.zip`. The app never swaps in an older version just because it's available.
-
-[Wago](https://addons.wago.io) isn't supported. Wago only gives download access to people with a paid API key. When an addon is also on Wago, its details link to the Wago page.
-
-## Files it keeps
-
-| What | Where |
-| --- | --- |
-| Settings (game folder, game version, sites) | `~/.config/wow-addons/config.json` |
-| Which site each addon was installed from | `~/.local/share/wow-addons/state.json` |
-| Addon catalog, refreshed every 6 hours | `~/.cache/wow-addons/` |
-| The app itself | `~/.local/share/wow-addons/app` |
-
-## Problems and ideas
-
-Open an [issue](https://github.com/ztrek7/omarchy-wow-addons/issues/new/choose). The app can copy the details a report needs: Settings → Copy details for a report. Pull requests are welcome too; see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Development
-
-The window is Qt Quick, run by Quickshell. It calls `backend.py` for anything that touches files or the network. `./run` starts the app from a checkout without installing it.
+Addon updates inside the app do not update the manager itself. Close WoW Addons,
+then run these commands from your original checkout:
 
 ```bash
-python3 -m unittest discover -s tests                 # Python tests, example data only
-WOW_ADDONS_DEMO=1 quickshell -n -p "$PWD/Smoke.qml"   # UI test with example data
+git pull --ff-only
+python3 scripts/install.py
 ```
+
+Reopen **WoW Addons** from the launcher after installation finishes. The installer
+**copies** the checkout to `~/.local/share/wow-addons/app` (or under
+`XDG_DATA_HOME`), so `git pull` alone does not update the installed app. Reinstalling
+replaces that app copy and refreshes its launcher and icon; it leaves addons,
+settings, and state intact. Review source changes before reinstalling.
+
+## Remove the manager
+
+From the checkout:
+
+```bash
+python3 scripts/install.py --uninstall
+```
+
+This removes the app, launcher entry, and icon. Your addons, settings, and state remain.
+
+## Problems and development
+
+Open an [issue](https://github.com/ztrek7/omarchy-wow-addons/issues/new/choose).
+Use **Settings → Copy details for a report** to collect useful diagnostics.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for offline tests and running from a checkout.
 
 ## License
 

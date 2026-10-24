@@ -30,3 +30,24 @@ WOW_ADDONS_DEMO=1 quickshell -n -p "$PWD/Smoke.qml"    # UI test with example da
 `WOW_ADDONS_DEMO=1 ./run` opens the app with made-up example data and changes turned off, which is handy for trying the interface without touching your game. Screenshots for the README should come from the real app.
 
 `backend.py` is what the window calls for anything that touches files or the network. `wowdir.py` finds game installs and reads `.toc` files, `library.py` changes the AddOns folder, `sources.py` talks to CurseForge and WoWInterface, and `catalog.py` builds the Browse list.
+
+## Check installer behavior without replacing your app
+
+Read [scripts/install.py](scripts/install.py) before changing it. It stages a
+copy of the listed runtime files, replaces the installed app directory, and
+writes the launcher entry and icon under `XDG_DATA_HOME`. It does not update
+the original checkout or touch game addons, settings, or state.
+
+```bash
+python3 -m unittest discover -s tests -p 'test_installer.py' -v
+```
+
+This test redirects `XDG_DATA_HOME` into a temporary directory. It installs
+twice to check replacement, verifies the copied files and launcher, then
+uninstalls and checks that the test state file survives. It does not replace
+your installed app or launch the UI. It requires Quickshell and Omarchy's theme
+module; without the theme module it is skipped, which is not a passing install test.
+
+The full Python suite uses temporary game folders and blocks real network
+calls. The demo UI commands above are separate visual checks; passing Python
+tests alone does not establish visual behavior or live addon downloads.
