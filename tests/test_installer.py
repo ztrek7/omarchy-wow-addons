@@ -31,6 +31,8 @@ class Installer(unittest.TestCase):
             expected = {f.name for pattern in ("*.py", "*.qml") for f in ROOT.glob(pattern)} - {"Smoke.qml", "Verify.qml"}
             self.assertEqual(expected - {f.name for f in app.iterdir()}, set())
             self.assertTrue(os.access(app / "run", os.X_OK))
+            # Omarchy's Commons import qs.Commons, which resolves against the app root.
+            self.assertTrue((app / "Commons").is_symlink() and (app / "Commons/Color.qml").is_file())
             entry = (data / "applications/wow-addons.desktop").read_text()
             self.assertIn(f'Exec="{app}/run"', entry)
             self.assertTrue((data / "icons/hicolor/scalable/apps/wow-addons.svg").is_file())

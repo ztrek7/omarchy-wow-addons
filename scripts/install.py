@@ -17,6 +17,7 @@ data = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
 target = data / "wow-addons" / "app"
 desktop = data / "applications" / "wow-addons.desktop"
 icon = data / "icons/hicolor/scalable/apps/wow-addons.svg"
+OMARCHY_COMMONS = Path("/usr/share/omarchy/shell/Commons")
 RUNTIME = ["App.qml", "InstalledView.qml", "BrowseView.qml", "SettingsView.qml", "backend.py", "catalog.py", "library.py",
            "sources.py", "wowdir.py", "run", "LICENSE", "README.md"]
 
@@ -39,7 +40,7 @@ def install():
     for command in ("quickshell", "python3"):
         if not shutil.which(command):
             raise SystemExit(f"Required command not found: {command}")
-    if not Path("/usr/share/omarchy/shell/Commons").is_dir():
+    if not OMARCHY_COMMONS.is_dir():
         raise SystemExit("Omarchy's shell theme module was not found at /usr/share/omarchy/shell/Commons.")
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".app-", dir=target.parent) as stage_dir:
@@ -49,6 +50,9 @@ def install():
             shutil.copy2(source / name, stage / name)
         shutil.copytree(source / "ui", stage / "ui", ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copytree(source / "assets/sources", stage / "assets/sources")
+        # Omarchy's Commons import each other as qs.Commons, which Quickshell
+        # resolves against this app's root, so link it in.
+        (stage / "Commons").symlink_to(OMARCHY_COMMONS)
         if target.exists():
             shutil.rmtree(target)
         stage.rename(target)
