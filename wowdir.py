@@ -112,8 +112,8 @@ def read_build_info(root):
 
 
 def product_dir(product):
-    """wow_classic_era -> _classic_era_, wow -> _retail_, wowt -> _ptr_."""
-    special = {"wow": "_retail_", "wowt": "_ptr_", "wowxptr": "_xptr_", "wowz": "_ptr2_"}
+    """wow_classic_era -> _classic_era_, wow -> _retail_, wowf -> _forever_."""
+    special = {"wow": "_retail_", "wowt": "_ptr_", "wowxptr": "_xptr_", "wowz": "_ptr2_", "wowf": "_forever_"}
     if product in special:
         return special[product]
     return "_" + product.removeprefix("wow_") + "_" if product.startswith("wow_") else None
@@ -135,6 +135,7 @@ def game_flavour(version, key=""):
     major, minor = parts[0], parts[1]
     if not major:
         return {"_retail_": "mainline", "_ptr_": "mainline", "_xptr_": "mainline", "_beta_": "mainline",
+                "_forever_": "forever_classic",
                 "_classic_era_": "vanilla_classic", "_classic_era_ptr_": "vanilla_classic"}.get(key)
     if major >= 6:
         return "mainline"
@@ -162,7 +163,7 @@ def flavor_name(key, flavour=None):
 
 def flavors(root):
     root = Path(root)
-    versions = {product_dir(product): version for product, version in read_build_info(root).items()}
+    versions = {key: version for product, version in read_build_info(root).items() if (key := product_dir(product))}
     result = []
     try:
         children = sorted(root.iterdir())
@@ -171,7 +172,13 @@ def flavors(root):
     for child in children:
         if not child.is_dir() or not FLAVOR_DIR.match(child.name):
             continue
-        if not (child / "Interface").is_dir() and not (child / "WTF").is_dir() and not any(child.glob("Wow*.exe")):
+        executable = any(p.is_file() for p in child.glob("Wow*.exe"))
+        # Battle.net leaves addons behind after uninstalling a client. When build records
+        # exist, folders with neither a record nor a client are leftovers, not installs.
+        if versions and child.name not in versions and not executable:
+            continue
+        # A preinstall may have a build record before its executable or Interface folder.
+        if child.name not in versions and not executable and not (child / "Interface").is_dir() and not (child / "WTF").is_dir():
             continue
         version = versions.get(child.name, "")
         interface = interface_number(version)

@@ -37,6 +37,50 @@ class Detection(FakeInstall):
     def test_product_dirs(self):
         self.assertEqual(wowdir.product_dir("wow_classic_beta"), "_classic_beta_")
         self.assertEqual(wowdir.product_dir("wow"), "_retail_")
+        self.assertEqual(wowdir.product_dir("wowf"), "_forever_")
+
+    def forever_preinstall(self):
+        (self.root / ".build.info").write_text(
+            "Active!DEC:1|Version!STRING:0|Product!STRING:0\n1|1.60.1.70755|wowf\n")
+        release = self.root / "_forever_"
+        release.mkdir()
+        return release
+
+    def test_forever_preinstall_before_executable_or_interface_exists(self):
+        release = self.forever_preinstall()
+        setup = wowdir.resolve(home=self.home)
+        self.assertEqual([f["key"] for f in setup["flavors"]], ["_forever_"])
+        game = setup["flavor"]
+        self.assertEqual((game["name"], game["version"], game["interface"], game["flavour"]),
+                         ("WoW Forever", "1.60.1", 16001, "forever_classic"))
+        self.assertEqual(game["addons"], str(release / "Interface/AddOns"))
+        self.assertFalse((release / "Interface").exists())  # Detection never creates game files.
+
+    def test_uninstalled_beta_leftovers_do_not_override_release(self):
+        self.forever_preinstall()
+        beta = self.root / "_classic_beta_"
+        addon = make_addon(beta / "Interface/AddOns", "Auctionator", interface="16001")
+        (beta / "WowB_loader.dll").touch()
+        setup = wowdir.resolve({"flavor": "_classic_beta_"}, home=self.home)
+        self.assertEqual(setup["flavor"]["key"], "_forever_")
+        self.assertNotIn("_classic_beta_", [f["key"] for f in setup["flavors"]])
+        self.assertTrue(addon.is_dir())  # Leftovers are preserved, not migrated or deleted.
+
+    def test_executable_without_build_record_is_still_detected(self):
+        self.forever_preinstall()
+        (self.root / "_retail_/Wow.exe").touch()
+        self.assertIn("_retail_", [f["key"] for f in wowdir.flavors(self.root)])
+
+    def test_missing_build_info_keeps_folder_detection(self):
+        (self.root / ".build.info").unlink()
+        self.assertEqual([f["key"] for f in wowdir.flavors(self.root)], ["_classic_era_", "_retail_"])
+
+    def test_forever_without_version_uses_its_own_game_not_retail(self):
+        (self.root / "_forever_").mkdir()
+        (self.root / "_forever_/Wow.exe").touch()
+        game = next(f for f in wowdir.flavors(self.root) if f["key"] == "_forever_")
+        self.assertEqual(game["flavour"], "forever_classic")
+        self.assertIsNone(game["interface"])
 
 
 class Toc(FakeInstall):

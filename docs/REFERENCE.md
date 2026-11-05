@@ -12,6 +12,17 @@ CFWidget's copy of a project occasionally stops updating. The app checks each fi
 
 [Wago](https://addons.wago.io) downloads aren't supported by this app. When an addon is also on Wago, its details link to the Wago page.
 
+## Game detection and beta leftovers
+
+WoW Forever's release client lives in `_forever_` and uses Battle.net product
+code `wowf`. The manager reads its version from `.build.info`, including during
+preinstallation before the game creates an `Interface` folder.
+
+When build records are available, folders with neither a build record nor a WoW
+executable are ignored. This keeps addons left by an uninstalled beta from being
+mistaken for an installed game. Those files are not deleted or copied into the
+release client; install fresh addons for the selected game through Browse.
+
 ## Files it keeps
 
 | What | Where |
