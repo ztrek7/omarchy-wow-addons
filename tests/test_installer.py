@@ -25,6 +25,8 @@ class Installer(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
             app = data / "wow-addons/app"
             self.assertTrue((app / "App.qml").is_file() and (app / "ui/Theme.qml").is_file())
+            self.assertTrue((app / "Commons").is_symlink())
+            self.assertEqual((app / "Commons").resolve(), Path("/usr/share/omarchy/shell/Commons"))
             self.assertTrue((app / "assets/sources/curseforge.png").is_file() and (app / "assets/sources/wowinterface.png").is_file())
             self.assertFalse((app / "Smoke.qml").exists())
             # Every module the app imports and every view it loads is installed.

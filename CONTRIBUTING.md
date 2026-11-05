@@ -29,6 +29,11 @@ WOW_ADDONS_DEMO=1 quickshell -n -p "$PWD/Smoke.qml"    # UI test with example da
 
 `WOW_ADDONS_DEMO=1 ./run` opens the app with made-up example data and changes turned off, which is handy for trying the interface without touching your game. Screenshots for the README should come from the real app.
 
+The `Commons` symlink exposes Omarchy's system theme module as `qs.Commons`,
+including its internal imports. Keep the symlink when copying a checkout; the
+installer creates it in the installed app too. Do not edit files through it:
+they belong to the system's Omarchy package.
+
 `backend.py` is what the window calls for anything that touches files or the network. `wowdir.py` finds game installs and reads `.toc` files, `library.py` changes the AddOns folder, `sources.py` talks to CurseForge and WoWInterface, and `catalog.py` builds the Browse list.
 
 ## Check installer behavior without replacing your app

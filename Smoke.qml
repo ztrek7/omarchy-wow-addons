@@ -125,9 +125,15 @@ App {
             hide.checked = true
             app.check(!entries(browse.results).some(e => ["Quest Compass", "Minimal Frames", "Trade Ledger", "Trade Ledger Classic Fix"].indexOf(e.name) >= 0), "hide installed")
             hide.checked = false
+            // Exercise both sides of the date filter without aging out the fixture.
+            let originalCatalog = app.catalog
+            app.catalog = app.catalog.map((e, i) => Object.assign({}, e, {
+                sources: e.sources.map(r => Object.assign({}, r, {updated: Date.now() - (i === 0 ? 1 : 60) * 86400000}))
+            }))
             updated.currentIndex = 1
-            app.check(browse.results.every(x => x.updated >= Date.now() - 31 * 86400000) && browse.results.length > 0, "updated past month")
+            app.check(browse.results.length === 1 && browse.results[0].entry.key === originalCatalog[0].key, "updated past month")
             updated.currentIndex = 0
+            app.catalog = originalCatalog
             category.currentIndex = 1 + browse.categories.findIndex(c => c.name === "Unit Mods")
             app.check(browse.results.length > 0 && browse.results.every(x => x.entry.category === "Unit Mods"), "category filter")
             category.currentIndex = 0

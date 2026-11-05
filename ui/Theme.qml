@@ -1,6 +1,6 @@
 pragma Singleton
 import QtQuick
-import "file:///usr/share/omarchy/shell/Commons" as Omarchy
+import qs.Commons as Omarchy
 
 QtObject {
     id: root

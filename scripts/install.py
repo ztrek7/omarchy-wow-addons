@@ -48,6 +48,9 @@ def install():
         for name in RUNTIME:
             shutil.copy2(source / name, stage / name)
         shutil.copytree(source / "ui", stage / "ui", ignore=shutil.ignore_patterns("__pycache__"))
+        # Omarchy's theme helpers also import qs.Commons internally. Quickshell
+        # resolves qs against the app root, so expose the system module there.
+        (stage / "Commons").symlink_to("/usr/share/omarchy/shell/Commons", target_is_directory=True)
         shutil.copytree(source / "assets/sources", stage / "assets/sources")
         if target.exists():
             shutil.rmtree(target)
