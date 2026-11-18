@@ -203,6 +203,10 @@ class Archives(FakeInstall):
         self.assertEqual(list(placed), ["Bar"])
         self.assertTrue((placed["Bar"] / "core.lua").is_file())
 
+    def test_forever_only_addon_keeps_its_folder_name(self):
+        placed = self.extract({"QuestieDB/QuestieDB_Forever.toc": toc("QuestieDB")})
+        self.assertEqual(list(placed), ["QuestieDB"])
+
     def test_source_archive_with_newer_game_tocs(self):
         for suffix in ("Camelot", "Standard", "Mainline", "Wrath", "Classic"):
             placed = self.extract({"owner-Bar-abc123/Bar.toc": toc("Bar"), f"owner-Bar-abc123/Bar_{suffix}.toc": "",

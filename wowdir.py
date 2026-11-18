@@ -29,7 +29,7 @@ DISABLED_DIR = "AddOns.disabled"
 # rank below the game's own suffix. -BCC and -WOTLKC are legacy names. Wrath Classic (3.4)
 # predates _Classic loading outside Classic Era, so it doesn't read it.
 TOC_SUFFIXES = {
-    "mainline": ("Standard", "Mainline"), "vanilla_classic": ("Vanilla", "Classic"), "forever_classic": ("Camelot", "Mainline"),
+    "mainline": ("Standard", "Mainline"), "vanilla_classic": ("Vanilla", "Classic"), "forever_classic": ("Forever", "Camelot", "Mainline"),
     "tbc_classic": ("TBC", "BCC", "Classic"), "wrath_classic": ("Wrath", "WOTLKC"), "titan_classic": ("Wrath", "WOTLKC", "Classic"),
     "cata_classic": ("Cata", "Classic"), "mists_classic": ("Mists", "Classic"),
 }
