@@ -72,6 +72,15 @@ App {
             let logo = Qt.resolvedUrl("assets/sources/curseforge.png").toString()
             app.cfLogos = {"quest-compass": logo}
             app.check(app.iconFor(app.rowEntries["wowi:9001"]) === logo, "same icon as Browse")
+            let selected = ["wowi:9001", "local:TradeLedger"]
+            selected.forEach(id => installed.mark(id))
+            let removeSelected = app.find(installed, "removeSelected")
+            app.check(removeSelected.visible && removeSelected.text.includes("(2)"), "bulk remove counts checked addons")
+            removeSelected.clicked()
+            app.check(selected.every(id => app.dialogTarget.ids.includes(id)) && app.dialogTarget.game === app.game.addons,
+                      "confirmation captures the selected addons and game")
+            app.find(app.windowItem.Window.window.contentItem, "cancelDialog").clicked()
+            selected.forEach(id => installed.mark(id))
             installed.selectedId = "wowi:9001"
             app.check(app.updateIds.length === 2, "two updates available")
             app.check(app.find(app.windowItem, "nav-installed").contentItem.text.indexOf("2 ↑") > 0, "update count in navigation")
@@ -89,6 +98,14 @@ App {
             app.check(!entries(browse.results).some(e => e.name === "Retail Only Meter"), "CurseForge flavour filter")
             app.check(JSON.stringify(game.model) === JSON.stringify(["WoW Classic Era 1.15.7", "WoW Retail 12.1.0", "Any game version"]), "game menu lists detected games: " + JSON.stringify(game.model))
             app.check(game.currentIndex === 0, "game menu starts on the game in use")
+            let first = byName("Forge Timers"), second = byName("Arcane Bags")
+            app.activeInstall = {key: first.key}
+            app.check(browse.canAct(second) && !browse.canAct(first), "other addons stay installable during a download")
+            app.installQueue = [{key: second.key}]
+            app.check(browse.actionText(first) === "Installing…" && browse.actionText(second) === "Queued" && !browse.canAct(second),
+                      "active and queued installs are labeled and deduplicated")
+            app.installQueue = []
+            app.activeInstall = null
             let forGame = browse.results.length
             game.activated(2)
             app.check(browse.anyGame && game.currentIndex === 2, "any game version")

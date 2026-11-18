@@ -7,6 +7,10 @@ import "ui" as UI
 Item {
     id: root
     required property var app
+    property var markedIds: []
+    function mark(id) {
+        markedIds = markedIds.includes(id) ? markedIds.filter(k => k !== id) : markedIds.concat([id])
+    }
     property string selectedId: ""
     readonly property var selected: app.addons.find(a => a.id === selectedId) || null
     readonly property var results: {
@@ -67,7 +71,15 @@ Item {
             UI.Pill { visible: root.app.updateIds.length > 0; text: root.app.updateIds.length + (root.app.updateIds.length === 1 ? " update" : " updates"); ink: UI.Theme.warning }
             UI.Pill { visible: root.app.outOfDateCount > 0; text: root.app.outOfDateCount + " out of date"; ink: UI.Theme.warning }
             Item { Layout.fillWidth: true }
-            UI.Label { visible: !!root.app.lastChecked; text: "Last checked " + root.app.lastChecked; color: UI.Theme.muted; font.pixelSize: 11 }
+            UI.ActionButton {
+                objectName: "removeSelected"
+                visible: root.markedIds.length > 0
+                enabled: !root.app.busy
+                text: "Remove selected (" + root.markedIds.length + ")…"
+                danger: true
+                onClicked: root.app.confirmRemove(root.app.addons.filter(a => root.markedIds.includes(a.id)))
+            }
+            UI.Label { visible: !root.markedIds.length && !!root.app.lastChecked; text: "Last checked " + root.app.lastChecked; color: UI.Theme.muted; font.pixelSize: 11 }
         }
         RowLayout {
             Layout.fillWidth: true
@@ -115,6 +127,12 @@ Item {
                         anchors.fill: parent
                         anchors.margins: 14
                         spacing: 12
+                        UI.CheckOption {
+                            implicitWidth: 24
+                            Accessible.name: "Select " + row.modelData.name + " for removal"
+                            checked: root.markedIds.includes(row.modelData.id)
+                            onClicked: root.mark(row.modelData.id)
+                        }
                         UI.AddonIcon {
                             size: 44
                             image: root.app.iconFor(row.entry)
@@ -329,10 +347,11 @@ Item {
                         }
                         UI.ActionButton {
                             objectName: "removeButton"
+                            visible: !root.markedIds.length
                             text: "Remove…"
                             danger: true
                             enabled: !root.app.busy
-                            onClicked: root.app.confirm("remove", detail.addon)
+                            onClicked: root.app.confirmRemove([detail.addon])
                         }
                     }
                 }

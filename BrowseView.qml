@@ -86,9 +86,13 @@ Item {
         return seen
     }
     function actionText(e) {
-        if (app.busy && app.request.action === "install" && e.sources.some(r => r.id === app.request.id)) return "Installing…"
+        let status = app.installStatus(e.key)
+        if (status) return status
         if (app.busy && app.request.action === "update" && (app.request.ids || []).indexOf(app.installedRowFor(e)) >= 0) return "Updating…"
         return ({installed: "Installed", update: "Update", replace: "Install…", install: "Install"})[app.entryState(e)]
+    }
+    function canAct(e) {
+        return !!e && !app.installStatus(e.key) && app.canInstall && (app.entryState(e) !== "update" || !app.busy)
     }
     function act(e, ref) {
         let state = app.entryState(e)
@@ -136,6 +140,7 @@ Item {
             }
             UI.Filter {
                 id: gameFilter
+                enabled: !root.app.busy
                 objectName: "gameFilter"
                 Layout.fillWidth: true
                 Layout.preferredWidth: 300
@@ -255,7 +260,7 @@ Item {
                                 implicitHeight: 30
                                 text: root.actionText(card.item)
                                 primary: card.installState === "install" || card.installState === "update"
-                                enabled: !root.app.busy && card.installState !== "installed" && !!root.app.game
+                                enabled: root.canAct(card.item) && card.installState !== "installed" && !!root.app.game
                                 onClicked: root.act(card.item, null)
                             }
                             UI.ActionButton { implicitHeight: 30; text: "Details"; onClicked: root.openDetails(card.item) }
@@ -300,7 +305,7 @@ Item {
                 UI.ActionButton {
                     text: root.entry ? root.actionText(root.entry) : ""
                     primary: !!root.entry && ["install", "update"].indexOf(root.app.entryState(root.entry)) >= 0
-                    enabled: !!root.entry && !root.app.busy && root.app.entryState(root.entry) !== "installed" && !!root.app.game && !!root.bestRef(root.entry)
+                    enabled: root.canAct(root.entry) && root.app.entryState(root.entry) !== "installed" && !!root.app.game && !!root.bestRef(root.entry)
                     onClicked: root.act(root.entry, null)
                 }
                 UI.ActionButton { text: "Close"; onClicked: details.close() }
@@ -338,7 +343,7 @@ Item {
                         visible: !sourceRow.wago
                         implicitHeight: 30
                         text: "Install from here"
-                        enabled: sourceRow.on && !root.app.busy && !!root.app.game
+                        enabled: sourceRow.on && root.app.canInstall && !!root.entry && !root.app.installStatus(root.entry.key)
                         onClicked: root.act(root.entry, sourceRow.modelData)
                     }
                     UI.ActionButton { implicitHeight: 30; text: "Page ↗"; onClicked: Qt.openUrlExternally(sourceRow.modelData.url) }

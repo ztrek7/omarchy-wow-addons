@@ -131,11 +131,36 @@ class CurseForge(FakeInstall):
             with self.assertRaises(sources.Problem):
                 sources.curseforge_release("auctionator", self.game)
 
+    def test_audio_download_above_old_limit(self):
+        # A sparse file behaves like a large response without a large allocation.
+        size = 300 * 1024 * 1024 + 1
+        url = "https://edge.forgecdn.net/audio.zip"
+        with (self.home / "response").open("w+b") as response:
+            response.truncate(size)
+            response.geturl = lambda: url
+            response.headers = {}
+            read = response.read
+            def bounded_read(amount):
+                self.assertGreater(amount, 0)
+                self.assertLessEqual(amount, 4 * 1024 * 1024)
+                return read(amount)
+            with patch("urllib.request.OpenerDirector.open", return_value=response), patch.object(response, "read", bounded_read):
+                target = sources.download(url, self.home / "audio.zip", size=size)
+        self.assertEqual(target.stat().st_size, size)
+
     def test_size_check(self):
-        with patch.object(sources, "fetch", return_value=b"12345"):
+        with patch.object(sources, "archive_chunks", return_value=[b"12", b"345"]):
             sources.download("https://example.invalid/a.zip", self.home / "ok.zip", size=5)
             with self.assertRaises(sources.Problem):
                 sources.download("https://example.invalid/a.zip", self.home / "bad.zip", size=6)
+
+    def test_oversized_stream_leaves_original_untouched(self):
+        destination = self.home / "archive.zip"
+        destination.write_bytes(b"old")
+        with patch.object(sources, "MAX_DOWNLOAD", 5), patch.object(sources, "archive_chunks", return_value=[b"123", b"456"]):
+            with self.assertRaisesRegex(sources.Problem, "archive limit"):
+                sources.download("https://edge.forgecdn.net/audio.zip", destination)
+        self.assertEqual(destination.read_bytes(), b"old")
 
     def test_compare_versions(self):
         for newer, older in (("v12.0.1", "6.2.5"), ("2.0", "1.0"), ("2.0", "2.0-rc1"), ("2.0-rc1", "2.0-beta3"), ("2.0-beta10", "2.0-beta2"),
@@ -197,7 +222,7 @@ class Archives(FakeInstall):
 
     def test_checksum(self):
         data = make_zip({"Bar/Bar.toc": toc("Bar")})
-        with patch.object(sources, "fetch", return_value=data):
+        with patch.object(sources, "archive_chunks", return_value=[data]):
             sources.download("https://example.invalid/a.zip", self.home / "ok.zip", hashlib.md5(data).hexdigest())
             with self.assertRaises(sources.Problem):
                 sources.download("https://example.invalid/a.zip", self.home / "bad.zip", "0" * 32)
