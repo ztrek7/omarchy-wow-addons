@@ -24,9 +24,11 @@ Open **WoW Addons** from the app launcher (**Super + Space**).
    and Proton prefixes; if it misses yours, choose the World of Warcraft folder
    in Settings. Check the detected game and version before installing addons.
 2. Search or filter **Browse**, select an addon, and install it. The app also
-   tries to install required addons from its supported sources.
+   tries to install required addons from its supported sources. Keep clicking
+   **Install** on other addons to queue them. The app installs them in order.
 3. Use **Installed** to update, disable, or remove addons. Updates are checked
-   when the app opens and every six hours while it stays open.
+   when the app opens and every six hours while it stays open. To uninstall several
+   addons together, check their boxes, click **Remove selected**, and confirm.
 
 ![Installed addons with their versions and status, and details for Questie](assets/installed.png)
 
@@ -53,19 +55,18 @@ See the [reference](docs/REFERENCE.md) for catalog behavior and stored files.
 
 ## Update the manager
 
-Addon updates inside the app do not update the manager itself. Close WoW Addons,
-then run these commands from your original checkout:
+The manager checks for a new stable GitHub release at startup and every six
+hours. You can also use **Settings → Check for update**. When a newer release
+is available, choose **Update to…** in the installed app, then close and reopen
+WoW Addons from the launcher. Updating the manager preserves your addons and settings.
+
+To install the current development version from your original checkout, close
+the app and run:
 
 ```bash
 git pull --ff-only
 python3 scripts/install.py
 ```
-
-Reopen **WoW Addons** from the launcher after installation finishes. The installer
-**copies** the checkout to `~/.local/share/wow-addons/app` (or under
-`XDG_DATA_HOME`), so `git pull` alone does not update the installed app. Reinstalling
-replaces that app copy and refreshes its launcher and icon; it leaves addons,
-settings, and state intact. Review source changes before reinstalling.
 
 ## Remove the manager
 

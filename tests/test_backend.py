@@ -31,6 +31,23 @@ class Backend(FakeInstall):
         self.assertEqual(data["setup"]["flavor"]["key"], "_classic_era_")
         self.assertEqual([a["name"] for a in data["addons"]], ["Bags"])
 
+    def test_remove_selected_reports_each_result(self):
+        for name in ("Keep", "One", "Two"):
+            make_addon(self.addons, name)
+        self.call(action="disable", id="local:Two")
+        ids = ["local:One", "local:Missing", "local:Two", "local:Two"]
+        response = self.call(action="remove", ids=ids, game=self.game["addons"])
+        self.assertEqual([(r["id"], r["ok"]) for r in response["results"]], list(zip(ids[:3], [True, False, True])))
+        self.assertEqual([a["name"] for a in self.call(action="list")["addons"]], ["Keep"])
+        self.assertEqual({p.name for p in (library.TRASH / "files").iterdir()}, {"One", "Two"})
+
+    def test_actions_do_not_follow_a_game_switch(self):
+        make_addon(self.addons, "Keep")
+        for request in ({"action": "remove", "ids": ["local:Keep"]}, {"action": "install", "location": "addon.zip"}):
+            result = self.call(**request, game="another game")
+            self.assertIn("selected game changed", result["error"])
+        self.assertTrue((self.addons / "Keep").exists())
+
     def test_problem_is_reported(self):
         data = self.call(action="disable", id="local:Missing")
         self.assertFalse(data["ok"])
@@ -47,7 +64,7 @@ class Backend(FakeInstall):
         v2 = make_zip({"Bar/Bar.toc": toc("Bar", Version="2")})
         details = {"id": "10", "name": "Bar", "version": "1", "updated": 1000, "download": "https://example.invalid/bar",
                    "md5": "", "author": "someone"}
-        with patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "fetch", return_value=v1):
+        with patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "archive_chunks", return_value=[v1]):
             data = self.call(action="install", source="wowinterface", id="10")
         self.assertTrue(data["ok"], data)
         self.assertEqual(self.call(action="list")["addons"][0]["id"], "wowi:10")
@@ -55,7 +72,7 @@ class Backend(FakeInstall):
             checks = self.call(action="check")["checks"]
         self.assertEqual(checks["wowi:10"], {"state": "available", "latest": "2", "source": "wowinterface"})
         with patch.object(sources, "wowi_details", return_value=dict(details, version="2", updated=2000)), \
-                patch.object(sources, "fetch", return_value=v2):
+                patch.object(sources, "archive_chunks", return_value=[v2]):
             results = self.call(action="update", ids=["wowi:10", "local:Nope"])["results"]
         self.assertEqual([r["ok"] for r in results], [True, False])
         addon = self.call(action="list")["addons"][0]
@@ -92,7 +109,7 @@ class Backend(FakeInstall):
         make_addon(self.addons, "Auctionator", Version="339", **{"X-Website": "https://www.curseforge.com/wow/addons/auctionator"})
         data = make_zip({"Auctionator/Auctionator.toc": toc("Auctionator", Version="340")})
         with patch.object(sources, "curseforge_release", return_value=self.curse("340", size=len(data))), \
-                patch.object(sources, "fetch", return_value=data), self.listings(games={("curseforge", "auctionator"): "1.15.7"}):
+                patch.object(sources, "archive_chunks", return_value=[data]), self.listings(games={("curseforge", "auctionator"): "1.15.7"}):
             results = self.call(action="update", ids=["local:Auctionator"], sources={"local:Auctionator": "curseforge"})["results"]
         self.assertTrue(results[0]["ok"], results)
         addon = self.call(action="list")["addons"][0]
@@ -111,7 +128,7 @@ class Backend(FakeInstall):
     def test_curseforge_page_installs(self):
         data = make_zip({"Auctionator/Auctionator.toc": toc("Auctionator")})
         with patch.object(sources, "curseforge_release", return_value=self.curse(size=len(data))) as lookup, \
-                patch.object(sources, "fetch", return_value=data):
+                patch.object(sources, "archive_chunks", return_value=[data]):
             self.assertTrue(self.call(action="install", location="https://www.curseforge.com/wow/addons/auctionator")["ok"])
         self.assertEqual(lookup.call_args[0][0], "auctionator")
 
@@ -137,7 +154,7 @@ class Backend(FakeInstall):
         self.assertIn("CurseForge: timed out", check["message"])
 
     def test_only_trusted_sites_are_downloaded_from(self):
-        with patch.object(sources, "fetch") as fetch:
+        with patch.object(sources, "archive_chunks") as fetch:
             for location in ("https://example.invalid/addon.zip", "BigWigsMods/BigWigs", "https://github.com/BigWigsMods/BigWigs",
                              "https://api.tukui.org/v1/download/elvui/x"):
                 data = self.call(action="install", location=location)
@@ -148,7 +165,7 @@ class Backend(FakeInstall):
     def test_wowinterface_page_installs(self):
         data = make_zip({"TomTom/TomTom.toc": toc("TomTom")})
         details = {"id": "7032", "name": "TomTom", "version": "4", "updated": 1, "download": "https://cdn.wowinterface.com/x", "md5": "", "author": "a"}
-        with patch.object(sources, "wowi_details", return_value=details) as lookup, patch.object(sources, "fetch", return_value=data):
+        with patch.object(sources, "wowi_details", return_value=details) as lookup, patch.object(sources, "archive_chunks", return_value=[data]):
             self.assertTrue(self.call(action="install", location="https://www.wowinterface.com/downloads/info7032-TomTom.html")["ok"])
         self.assertEqual(lookup.call_args[0][0], "7032")
 
@@ -167,8 +184,8 @@ class Backend(FakeInstall):
         downloads = []
         def fetch(url, **kwargs):
             downloads.append(url)
-            return archives[url.rsplit("/", 1)[1]]
-        with patch.object(sources, "curseforge_release", side_effect=release), patch.object(sources, "fetch", side_effect=fetch), \
+            return [archives[url.rsplit("/", 1)[1]]]
+        with patch.object(sources, "curseforge_release", side_effect=release), patch.object(sources, "archive_chunks", side_effect=fetch), \
                 patch.object(catalog, "refresh"), self.catalog_with(other, dbm):
             data = self.call(action="install", source="curseforge", id="raids")
         self.assertTrue(data["ok"], data)
@@ -200,7 +217,7 @@ class Backend(FakeInstall):
         details = {"id": "5086", "name": "BigWigs", "version": "v425.7", "updated": 1, "download": "https://cdn.wowinterface.com/x", "md5": "", "author": "a"}
         stale = sources.Problem("CFWidget's copy of BigWigs is out of date (its newest file is from May 12, 2022), so it can't be installed from CurseForge right now.")
         with patch.object(sources, "curseforge_release", side_effect=stale), patch.object(sources, "wowi_details", return_value=details), \
-                patch.object(sources, "fetch", return_value=data), self.listings(games={("wowinterface", "5086"): "1.15.7"}):
+                patch.object(sources, "archive_chunks", return_value=[data]), self.listings(games={("wowinterface", "5086"): "1.15.7"}):
             result = self.call(action="install", source="curseforge", id="bigwigs", alternatives=[{"source": "wowinterface", "id": "5086"}])
         self.assertTrue(result["ok"], result)
         self.assertIn("Installed BigWigs v425.7", result["message"])
@@ -214,7 +231,7 @@ class Backend(FakeInstall):
     def test_stale_curseforge_install_updates_from_wowinterface(self):
         data = make_zip({"DBM-Core/DBM-Core.toc": toc("DBM", Version="12.1.0")})
         with patch.object(sources, "curseforge_release", return_value=self.curse("12.1.0", size=len(data), project="deadly-boss-mods")), \
-                patch.object(sources, "fetch", return_value=data):
+                patch.object(sources, "archive_chunks", return_value=[data]):
             self.call(action="install", source="curseforge", id="deadly-boss-mods")
         entries = [{"key": "curseforge:deadly-boss-mods", "name": "DBM", "dirs": ["DBM-Core"], "sources": [
             {"source": "curseforge", "id": "deadly-boss-mods", "numericId": "3358"}, {"source": "wowinterface", "id": "8814"}]}]
@@ -232,7 +249,7 @@ class Backend(FakeInstall):
         entries = [{"key": "curseforge:deadly-boss-mods", "name": "DBM", "dirs": ["DBM-Core"], "sources": [
             {"source": "curseforge", "id": "deadly-boss-mods", "numericId": "3358"}, {"source": "wowinterface", "id": "8814"}]}]
         with self.catalog_with(*entries), patch.object(sources, "curseforge_release", side_effect=sources.Problem("out of date")), \
-                patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "fetch", return_value=data), \
+                patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "archive_chunks", return_value=[data]), \
                 self.listings(games={("wowinterface", "8814"): "1.15.7"}):
             result = self.call(action="install", location="curseforge.com/wow/addons/deadly-boss-mods")
         self.assertTrue(result["ok"], result)
@@ -271,7 +288,7 @@ class Backend(FakeInstall):
     def install_curseforge(self, version, *folders):
         data = make_zip({f"{name}/{name}.toc": toc(name, Version=version) for name in folders})
         with patch.object(sources, "curseforge_release", return_value=self.curse(version, size=len(data), project="boss")), \
-                patch.object(sources, "fetch", return_value=data):
+                patch.object(sources, "archive_chunks", return_value=[data]):
             self.assertTrue(self.call(action="install", source="curseforge", id="boss")["ok"])
 
     def boss_on_both_sites(self, wowi_version):
@@ -291,7 +308,7 @@ class Backend(FakeInstall):
         self.assertEqual(check, {"state": "current", "latest": "1.0", "source": "wowinterface"})
         # Updating anyway (the check found 2.1 on CurseForge, whose download then failed) doesn't fall back to 1.0.
         with self.catalog_with(*entries), patch.object(sources, "curseforge_release", side_effect=down), \
-                patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "fetch") as fetch, \
+                patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "archive_chunks") as fetch, \
                 self.listings(games={("wowinterface", "77"): "1.15.7"}):
             result = self.call(action="update", ids=["curseforge:boss"], sources={"curseforge:boss": "curseforge"})["results"][0]
         fetch.assert_not_called()
@@ -308,7 +325,7 @@ class Backend(FakeInstall):
                 patch.object(catalog, "source_entries", return_value=[{"id": "77", "version": "2.0-rc1", "updated": 9}]), listed:
             self.assertEqual(self.call(action="check")["checks"]["curseforge:boss"]["state"], "current")
         with self.catalog_with(*entries), patch.object(sources, "curseforge_release", side_effect=down), \
-                patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "fetch") as fetch, listed:
+                patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "archive_chunks") as fetch, listed:
             result = self.call(action="update", ids=["curseforge:boss"])["results"][0]
         fetch.assert_not_called()
         self.assertIn("isn't newer than the installed 2.0", result["message"])
@@ -321,7 +338,7 @@ class Backend(FakeInstall):
         self.assertEqual(check["state"], "unknown")
         self.assertIn("isn't clear whether that's newer than yours (2.0)", check["message"])
         with patch.object(sources, "curseforge_release", return_value=self.curse("2.0-12-gabc123")), \
-                patch.object(sources, "fetch") as fetch, listed:
+                patch.object(sources, "archive_chunks") as fetch, listed:
             result = self.call(action="update", ids=["local:Boss"])["results"][0]
         fetch.assert_not_called()
         self.assertIn("can't tell whether its newest file (2.0-12-gabc123) is newer than the installed 2.0", result["message"])
@@ -332,7 +349,7 @@ class Backend(FakeInstall):
         details = {"id": "77", "name": "Boss", "version": "3.0", "updated": 9, "download": "https://cdn.wowinterface.com/x", "md5": "", "author": "a"}
         listed = self.listings(games={("wowinterface", "77"): "12.1.0", ("curseforge", "2382"): "1.15.7"})
         with patch.object(sources, "curseforge_release", side_effect=sources.Problem("CFWidget is down.")), \
-                patch.object(sources, "wowi_details", return_value=details) as wowi, patch.object(sources, "fetch") as fetch, listed:
+                patch.object(sources, "wowi_details", return_value=details) as wowi, patch.object(sources, "archive_chunks") as fetch, listed:
             check = self.call(action="check")["checks"]["local:Boss"]
             result = self.call(action="update", ids=["local:Boss"], sources={"local:Boss": "wowinterface"})["results"][0]
         self.assertEqual(check["state"], "error")
@@ -368,17 +385,17 @@ class Backend(FakeInstall):
         return make_zip({f"Boss/Boss.toc": toc("Boss", Version=version)})
 
     def fetch_boss(self, url, **kwargs):
-        return self.boss_zip(url.rsplit("-", 1)[1].removesuffix(".zip"))
+        return [self.boss_zip(url.rsplit("-", 1)[1].removesuffix(".zip"))]
 
     def test_updates_never_switch_to_another_games_file(self):
         # Installed for Classic Era; later CurseForge only lists Boss for Forever, with a newer Forever file.
-        with self.cfwidget_files((1001, "1.0", "1.15.7")), patch.object(sources, "fetch", side_effect=self.fetch_boss), \
+        with self.cfwidget_files((1001, "1.0", "1.15.7")), patch.object(sources, "archive_chunks", side_effect=self.fetch_boss), \
                 self.listings(games={("curseforge", "boss"): "1.15.7"}):
             self.assertTrue(self.call(action="install", source="curseforge", id="boss")["ok"])
         forever_only = self.listings(games={("curseforge", "boss"): "1.60.1", ("curseforge", "2382"): "1.60.1"})
         with self.cfwidget_files((1001, "1.0", "1.15.7"), (1002, "2.0", "1.60.1")), forever_only:
             self.assertEqual(self.call(action="check")["checks"]["curseforge:boss"]["state"], "current")
-        with self.cfwidget_files((1002, "2.0", "1.60.1")), patch.object(sources, "fetch", side_effect=self.fetch_boss) as fetch, forever_only:
+        with self.cfwidget_files((1002, "2.0", "1.60.1")), patch.object(sources, "archive_chunks", side_effect=self.fetch_boss) as fetch, forever_only:
             check = self.call(action="check")["checks"]["curseforge:boss"]
             result = self.call(action="update", ids=["curseforge:boss"])["results"][0]
         self.assertEqual(check["state"], "error")
@@ -389,10 +406,10 @@ class Backend(FakeInstall):
 
     def test_a_chosen_other_game_install_keeps_updating_from_that_game(self):
         forever_only = self.listings(games={("curseforge", "boss"): "1.60.1", ("curseforge", "2382"): "1.60.1"})
-        with self.cfwidget_files((1002, "2.0", "1.60.1")), patch.object(sources, "fetch", side_effect=self.fetch_boss), forever_only:
+        with self.cfwidget_files((1002, "2.0", "1.60.1")), patch.object(sources, "archive_chunks", side_effect=self.fetch_boss), forever_only:
             self.assertTrue(self.call(action="install", source="curseforge", id="boss")["ok"])
         self.assertTrue(library.packages(library.load_state(), self.game)[0]["otherGame"])
-        with self.cfwidget_files((1002, "2.0", "1.60.1"), (1003, "2.1", "1.60.1")), patch.object(sources, "fetch", side_effect=self.fetch_boss), forever_only:
+        with self.cfwidget_files((1002, "2.0", "1.60.1"), (1003, "2.1", "1.60.1")), patch.object(sources, "archive_chunks", side_effect=self.fetch_boss), forever_only:
             self.assertEqual(self.call(action="check")["checks"]["curseforge:boss"]["state"], "available")
             self.assertTrue(self.call(action="update", ids=["curseforge:boss"])["results"][0]["ok"])
         self.assertEqual(self.call(action="list")["addons"][0]["version"], "2.1")
@@ -409,7 +426,7 @@ class Backend(FakeInstall):
         entries, details = self.boss_on_both_sites("2.1")
         data = make_zip({"Boss/Boss.toc": toc("Boss", Version="2.1")})
         with self.catalog_with(*entries), patch.object(sources, "curseforge_release", side_effect=sources.Problem("CFWidget is down.")), \
-                patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "fetch", return_value=data), \
+                patch.object(sources, "wowi_details", return_value=details), patch.object(sources, "archive_chunks", return_value=[data]), \
                 self.listings(games={("wowinterface", "77"): "1.15.7"}):
             result = self.call(action="update", ids=["curseforge:boss"])["results"][0]
         self.assertTrue(result["ok"], result)
@@ -446,7 +463,7 @@ class Backend(FakeInstall):
                "sources": [{"source": "curseforge", "id": "libthing", "flavours": ["vanilla_classic"], "updated": 5, "downloads": 9}]}
         data = make_zip({"LibThing/LibThing.toc": toc("LibThing")})
         with patch.object(sources, "curseforge_release", return_value=self.curse("1", size=len(data), project="libthing")), \
-                patch.object(sources, "fetch", return_value=data), patch.object(catalog, "refresh"), self.catalog_with(lib):
+                patch.object(sources, "archive_chunks", return_value=[data]), patch.object(catalog, "refresh"), self.catalog_with(lib):
             message = self.call(action="requirements", id="local:Plugin")["message"]
         self.assertIn("Turned on Core, which Plugin requires.", message)
         self.assertIn("Also installed LibThing, which Core requires.", message)

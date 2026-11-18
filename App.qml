@@ -19,6 +19,10 @@ Scope {
     property var checks: ({})
     property bool gameRunning: false
     property var downloads: []
+    property var managerRelease: ({})
+    property string managerMessage: ""
+    property bool restartNeeded: false
+    readonly property bool checkingManager: managerCheck.running
     property string lastChecked: ""
 
     // The Browse catalog (CurseForge and WoWInterface), loaded from the backend's cache file.
@@ -42,7 +46,10 @@ Scope {
     property string errors: ""
     property string dialogAction: ""
     property var dialogTarget: ({})
-    readonly property bool busy: worker.running
+    property var installQueue: []
+    property var activeInstall: null
+    readonly property bool busy: !!request.action || !!activeInstall || installQueue.length > 0
+    readonly property bool canInstall: !!game && (!busy || !!activeInstall || installQueue.length > 0)
 
     readonly property var updateIds: addons.filter(a => checks[a.id]?.state === "available").map(a => a.id)
     readonly property int enabledCount: addons.filter(a => a.state !== "disabled").length
@@ -105,6 +112,9 @@ Scope {
     function execute(data) {
         if (busy) return
         if (demo) { log("Preview mode: changes are disabled.", false); return }
+        start(data)
+    }
+    function start(data) {
         request = data
         output = ""
         errors = ""
@@ -112,7 +122,7 @@ Scope {
         if (!followUp) {
             failed = false
             status = ({list: "Reading your AddOns folder…", install: "Downloading and installing…", requirements: "Installing what it needs…",
-                       update: "Installing updates…", remove: "Moving to the trash…", enable: "Enabling…", disable: "Disabling…", configure: "Saving settings…"})[data.action] || "Working…"
+                       update: "Installing updates…", updateManager: "Updating WoW Addons…", remove: "Moving to the trash…", enable: "Enabling…", disable: "Disabling…", configure: "Saving settings…"})[data.action] || "Working…"
         }
         worker.command = ["python3", helper(), JSON.stringify(data)]
         worker.running = true
@@ -128,6 +138,16 @@ Scope {
         if (force) status = "Checking for updates…"
         checkWorker.command = ["python3", helper(), JSON.stringify({action: "check", force: !!force})]
         checkWorker.running = true
+    }
+    function checkManager() {
+        if (demo || checkingManager || restartNeeded || request.action === "updateManager") return
+        managerCheck.output = ""
+        managerMessage = "Checking for a manager update…"
+        managerCheck.running = true
+    }
+    function applyManagerUpdate() {
+        if (busy || checkingManager || !managerRelease.available || !managerRelease.installedCopy) return
+        execute({action: "updateManager", version: managerRelease.latest})
     }
     function update(ids) {
         let preferred = {}
@@ -168,8 +188,42 @@ Scope {
         let request = {action: "install", source: ref.source, id: ref.id, alternatives: (alternatives || []).map(r => ({source: r.source, id: r.id}))}
         // Installing an installed addon from its other site replaces that copy, modules and all.
         if (row) request.replaces = row
-        if (clashes.length) confirm("replace", {name: entry.name, clashes: clashes, request: request})
-        else execute(request)
+        request.game = game.addons
+        let owners = {}
+        entry.dirs.forEach(d => owners[d] = folderOwners[d])
+        let job = {key: entry.key, name: entry.name, entry: entry, data: request, owners: owners}
+        if (clashes.length) confirm("replace", {name: entry.name, clashes: clashes, job: job})
+        else queueInstall(job)
+    }
+    function queueInstall(job) {
+        if (!canInstall || installStatus(job.key)) return
+        if (demo) { log("Preview mode: changes are disabled.", false); return }
+        installQueue = installQueue.concat([job])
+        if (activeInstall) log("Queued " + job.name + ".", false)
+        nextInstall()
+    }
+    function installStatus(key) {
+        if (activeInstall && activeInstall.key === key) return "Installing…"
+        return installQueue.some(job => job.key === key) ? "Queued" : ""
+    }
+    function nextInstall() {
+        if (request.action || activeInstall || !installQueue.length) return
+        let job = installQueue[0]
+        installQueue = installQueue.slice(1)
+        let entry = job.entry
+        if (job.data.game !== game?.addons) log("Skipped " + job.name + " because the selected game changed.", true)
+        else if (entry && !job.data.replaces && installedRowFor(entry)) log(job.name + " is already installed.", false)
+        else if (entry && entry.dirs.some(d => folderOwners[d] !== job.owners[d])) {
+            log("The installed folders for " + job.name + " changed. Select Install again to review them.", true)
+        } else {
+            activeInstall = job
+            start(job.data)
+            return
+        }
+        Qt.callLater(nextInstall)
+    }
+    function addLocationToQueue(location) {
+        queueInstall({key: "location:" + location, name: location, data: {action: "install", location: location, game: game.addons}})
     }
     function wantLogo(slug) {
         if (demo || !slug || cfLogos[slug] || logoTried[slug] || logoQueue.indexOf(slug) >= 0) return
@@ -215,6 +269,15 @@ Scope {
         detailsWorker.command = ["python3", helper(), JSON.stringify({action: "details", source: source, id: id})]
         detailsWorker.running = true
     }
+    function confirmRemove(rows) {
+        if (!rows.length || busy) return
+        let names = rows.slice(0, 8).map(a => a.name)
+        if (rows.length > 8) names.push("and " + (rows.length - 8) + " more")
+        confirm("remove", {ids: rows.map(a => a.id), game: game.addons,
+                           name: rows.length === 1 ? rows[0].name : rows.length + " selected addons",
+                           summary: names.join(", ") + "."})
+    }
+
     function confirm(action, target) {
         dialogAction = action
         dialogTarget = target || {}
@@ -226,9 +289,24 @@ Scope {
     function finish(code) {
         let data
         try { data = JSON.parse(output) }
-        catch (e) { log(errors.trim() || "Something went wrong (exit " + code + ").", true); return }
-        if (!data.ok) { log(data.error || "The operation failed.", true); return }
+        catch (e) { data = {ok: false, error: errors.trim() || "Something went wrong (exit " + code + ")."} }
+        if (!data.ok) {
+            log((activeInstall && request.action === "install" ? activeInstall.name + ": " : "") + (data.error || "The operation failed."), true)
+            if (request.action === "updateManager") managerMessage = data.error
+            if (request.action === "list" && installQueue.length) {
+                log("Stopped the install queue because the installed folders could not be refreshed.", true)
+                installQueue = []
+            }
+            return ["install", "remove", "update"].includes(request.action)
+        }
         let action = request.action
+        if (action === "updateManager") {
+            restartNeeded = true
+            managerRelease = {}
+            managerMessage = data.message
+            log(data.message, false)
+            return
+        }
         if (action === "list") {
             let before = game?.addons
             setup = data.setup
@@ -238,6 +316,7 @@ Scope {
             downloads = data.downloads || []
             if (game?.addons !== before) {
                 // Another game (or folder): its addons share ids with this one's, so its update results don't apply.
+                installedView.markedIds = []
                 checks = {}
                 lastChecked = ""
                 autoChecked = false
@@ -246,6 +325,7 @@ Scope {
                 addons.forEach(a => { if (checks[a.id]) kept[a.id] = checks[a.id] })
                 checks = kept
             }
+            installedView.markedIds = installedView.markedIds.filter(id => addons.some(a => a.id === id))
             if (!game) log("No World of Warcraft install found. Choose its folder in Settings.", true)
             else if (!followUp) status = addons.length + " addons in " + gameLabel() + " · " + enabledCount + " enabled"
             followUp = false
@@ -258,7 +338,7 @@ Scope {
         if (data.results) {
             data.results.forEach(r => log(r.message, !r.ok))
             let failures = data.results.filter(r => !r.ok).length
-            log((data.results.length - failures) + " updated · " + failures + " failed" + (gameRunning ? " · /reload in game to apply" : ""), failures > 0)
+            log((data.results.length - failures) + (action === "remove" ? " removed · " : " updated · ") + failures + " failed" + (gameRunning ? " · /reload in game to apply" : ""), failures > 0)
             let next = Object.assign({}, checks)
             data.results.forEach(r => { if (r.ok) delete next[r.id] })
             checks = next
@@ -273,8 +353,7 @@ Scope {
             log(data.message + (gameRunning && action !== "configure" ? " Restart the game or /reload to apply." : ""), false)
         }
         // Show the folder as it is now, keeping the message above in the status line.
-        followUp = true
-        Qt.callLater(refresh)
+        return true
     }
     property bool followUp: false
     function finishCheck(data, auto) {
@@ -308,6 +387,7 @@ Scope {
         if (demo) demoFile.path = Qt.resolvedUrl("tests/demo.json")
         else {
             refresh()
+            checkManager()
             loadCatalog(false)
             fetchLogos(true)  // Logos remembered from earlier sessions.
         }
@@ -343,8 +423,8 @@ Scope {
     Timer {
         interval: 6 * 3600 * 1000
         repeat: true
-        running: !app.demo && !!app.game
-        onTriggered: app.checkUpdates(false)
+        running: !app.demo
+        onTriggered: { app.checkUpdates(false); app.checkManager() }
     }
     Process {
         id: checkWorker
@@ -356,6 +436,20 @@ Scope {
             let data
             try { data = JSON.parse(output) } catch (e) { data = {ok: false, error: "The update helper failed."} }
             app.finishCheck(data, auto)
+        }
+    }
+    Process {
+        id: managerCheck
+        property string output: ""
+        command: ["python3", app.helper(), '{"action":"checkManager"}']
+        stdout: SplitParser { onRead: data => managerCheck.output += data + "\n" }
+        onExited: {
+            let result
+            try { result = JSON.parse(output) } catch (e) { result = {} }
+            app.managerRelease = result
+            app.managerMessage = !result.ok ? "Manager update check failed. " + (result.error || "Try again.")
+                : result.available ? "WoW Addons " + result.latest + " is available." + (result.installedCopy ? "" : " Open the installed app to update.")
+                : "WoW Addons is up to date."
         }
     }
     Process { id: configWorker }
@@ -376,7 +470,17 @@ Scope {
         id: worker
         stdout: SplitParser { onRead: data => app.output += data + "\n" }
         stderr: SplitParser { onRead: data => app.errors += data + "\n" }
-        onExited: exitCode => app.finish(exitCode)
+        onExited: exitCode => {
+            if (app.finish(exitCode)) {
+                app.followUp = true
+                Qt.callLater(() => app.start({action: "list"}))
+            } else {
+                app.followUp = false
+                app.request = {}
+                app.activeInstall = null
+                Qt.callLater(app.nextInstall)
+            }
+        }
     }
     Process {
         id: catalogWorker
@@ -427,7 +531,7 @@ Scope {
 
         Shortcut { sequence: "Ctrl+F"; onActivated: app.page === "browse" ? browseView.focusSearch() : installedView.focusSearch() }
         Shortcut { sequence: "Ctrl+R"; onActivated: app.page === "browse" ? app.loadCatalog(true) : app.refresh() }
-        Shortcut { sequence: "Ctrl+N"; onActivated: app.confirm("add", null) }
+        Shortcut { sequence: "Ctrl+N"; enabled: app.canInstall; onActivated: app.confirm("add", null) }
         Shortcut { sequence: "Ctrl+1"; onActivated: app.page = "installed" }
         Shortcut { sequence: "Ctrl+2"; onActivated: app.page = "browse" }
         Shortcut {
@@ -514,7 +618,7 @@ Scope {
                             onClicked: app.confirm("updateAll", null)
                         }
                         UI.ActionButton { visible: app.page === "browse"; text: catalogWorker.running ? "Loading…" : "↻  Refresh catalog"; enabled: !catalogWorker.running && !app.demo; onClicked: app.loadCatalog(true) }
-                        UI.ActionButton { objectName: "addButton"; text: "+  Add addon"; primary: true; enabled: !app.busy && !!app.game; onClicked: app.confirm("add", null) }
+                        UI.ActionButton { objectName: "addButton"; text: "+  Add addon"; primary: true; enabled: app.canInstall; onClicked: app.confirm("add", null) }
                     }
                     Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: UI.Theme.border }
                     StackLayout {
@@ -557,6 +661,12 @@ Scope {
                             UI.Tooltip { visible: statusHover.hovered && parent.truncated; text: app.status }
                             HoverHandler { id: statusHover }
                         }
+                        UI.ActionButton {
+                            visible: !!app.managerRelease.available || app.restartNeeded
+                            text: app.restartNeeded ? "Manager updated" : "Manager update available"
+                            onClicked: app.page = "settings"
+                        }
+                        UI.Pill { visible: app.installQueue.length > 0; text: app.installQueue.length + " queued"; ink: UI.Theme.accent }
                         UI.Pill { visible: app.gameRunning; text: "Game running · /reload after changes"; ink: UI.Theme.warning }
                         UI.ActionButton { text: "Refresh"; enabled: !app.busy; implicitHeight: 30; onClicked: app.refresh() }
                     }
@@ -588,7 +698,7 @@ Scope {
                 UI.Label {
                     Layout.fillWidth: true
                     text: app.dialogAction === "add" ? "Paste an addon's CurseForge or WoWInterface page, or the path of a .zip you downloaded. The right file is picked for " + app.gameLabel() + "."
-                        : app.dialogAction === "remove" ? "Its " + (app.dialogTarget.dirs?.length || 0) + " folder" + (app.dialogTarget.dirs?.length === 1 ? "" : "s") + " move to the trash, so you can restore them. Settings the addon saved in WTF are kept."
+                        : app.dialogAction === "remove" ? (app.dialogTarget.summary || "") + " The folders move to the trash. Saved settings stay in WTF."
                         : app.dialogAction === "replace" ? (app.dialogTarget.name || "This addon") + " installs folders you already have: " + (app.dialogTarget.clashes || []).join(", ") + ". The current copies move to the trash."
                         : app.updateIds.map(id => "  •  " + (app.addons.find(a => a.id === id)?.name || id) + "  →  " + (app.checks[id]?.latest || "")).join("\n")
                     font.pixelSize: 13; color: UI.Theme.muted; wrapMode: Text.Wrap; lineHeight: 1.4
@@ -621,19 +731,20 @@ Scope {
                 UI.Label { visible: app.demo; text: "Preview only. Actions are disabled."; color: UI.Theme.warning; font.pixelSize: 12 }
                 RowLayout {
                     Item { Layout.fillWidth: true }
-                    UI.ActionButton { text: "Cancel"; onClicked: dialog.close() }
+                    UI.ActionButton { objectName: "cancelDialog"; text: "Cancel"; onClicked: dialog.close() }
                     UI.ActionButton {
                         id: confirmButton
                         text: ({add: "Install", remove: "Move to trash", replace: "Replace and install", updateAll: "Update all"})[app.dialogAction] || "OK"
                         primary: app.dialogAction !== "remove"
                         danger: app.dialogAction === "remove"
-                        enabled: !app.busy && (app.dialogAction !== "add" || addLocation.text.trim().length > 0)
+                        enabled: app.dialogAction === "add" ? app.canInstall && addLocation.text.trim().length > 0
+                            : app.dialogAction === "replace" ? app.canInstall : !app.busy
                         onClicked: {
                             let action = app.dialogAction
                             dialog.close()
-                            if (action === "add") app.execute({action: "install", location: addLocation.text.trim()})
-                            else if (action === "remove") app.execute({action: "remove", id: app.dialogTarget.id})
-                            else if (action === "replace") app.execute(app.dialogTarget.request)
+                            if (action === "add") app.addLocationToQueue(addLocation.text.trim())
+                            else if (action === "remove") app.execute({action: "remove", ids: app.dialogTarget.ids, game: app.dialogTarget.game})
+                            else if (action === "replace") app.queueInstall(app.dialogTarget.job)
                             else app.update(app.updateIds.slice())
                         }
                     }

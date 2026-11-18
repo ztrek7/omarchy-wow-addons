@@ -12,16 +12,19 @@ import traceback
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import catalog  # noqa: E402
+import manager_update  # noqa: E402
 import library  # noqa: E402
 from library import Problem  # noqa: E402
 import sources  # noqa: E402
 import wowdir  # noqa: E402
 
 
-def current_game():
+def current_game(expected=None):
     setup = wowdir.resolve()
     if not setup["flavor"]:
         raise Problem("No World of Warcraft install was found. Choose its folder in Settings.")
+    if expected and setup["flavor"]["addons"] != expected:
+        raise Problem("The selected game changed. Refresh and try again.")
     return setup, setup["flavor"]
 
 
@@ -73,8 +76,17 @@ def toggle(request):
 
 
 def remove(request):
-    _, game = current_game()
-    return {"message": library.remove(game, request["id"])}
+    _, game = current_game(request.get("game"))
+    if "ids" not in request:
+        return {"message": library.remove(game, request["id"])}
+    results = []
+    for key in dict.fromkeys(request["ids"]):
+        try:
+            message = library.remove(game, key)
+            results.append({"id": key, "ok": True, "message": message})
+        except (Problem, OSError) as error:
+            results.append({"id": key, "ok": False, "message": f"{key}: {error}"})
+    return {"results": results}
 
 
 def browse_catalog(request):
@@ -309,7 +321,7 @@ def install_first(choices, game, state, replaces=None, other_games=False):
 
 def install(request):
     """Install an addon. From Browse, the addon's other site is tried if the first one fails."""
-    _, game = current_game()
+    _, game = current_game(request.get("game"))
     state = library.load_state()
     choices = [request] + [dict(alt) for alt in request.get("alternatives") or [] if alt.get("source") in SOURCE_NAMES]
     if "alternatives" not in request:
@@ -474,7 +486,9 @@ def update(request):
     return {"results": results}
 
 
-ACTIONS = {"list": overview, "configure": configure, "enable": toggle, "disable": toggle, "remove": remove,
+ACTIONS = {"checkManager": lambda request: manager_update.check(),
+           "updateManager": lambda request: manager_update.apply(request["version"]),
+           "list": overview, "configure": configure, "enable": toggle, "disable": toggle, "remove": remove,
            "catalog": browse_catalog, "details": details, "logos": logos, "install": install, "requirements": requirements, "check": check, "update": update}
 
 

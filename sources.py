@@ -5,14 +5,17 @@ repositories or links. Neither needs an API key: WoWInterface publishes an
 open API, and CurseForge projects are read from CFWidget, a public mirror of
 CurseForge's data, with files downloaded from CurseForge's own CDN.
 """
+from contextlib import contextmanager
 import datetime
 import hashlib
 import html
+import http.client
 import json
 import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -25,12 +28,12 @@ from library import Problem
 
 CACHE = Path(os.environ.get("XDG_CACHE_HOME") or wowdir.HOME / ".cache") / "wow-addons"
 WOWI = "https://api.mmoui.com/v3/game/WOW"
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 USER_AGENT = f"omarchy-wow-addons/{VERSION} (+https://github.com/ztrek7/omarchy-wow-addons)"
 CATALOG_TTL = 6 * 3600
-MAX_DOWNLOAD = 300 * 1024 * 1024
-MAX_UNPACKED = 1024 * 1024 * 1024
-MAX_FILES = 40000
+MAX_DOWNLOAD = 4 * 1024**3
+MAX_UNPACKED = 8 * 1024**3
+MAX_FILES = 100_000
 
 
 # The only hosts anything is fetched from. Redirects must stay among them too.
@@ -59,30 +62,35 @@ class TrustedRedirects(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def fetch(url, limit=64 * 1024 * 1024, accept="application/json", hosts=API_HOSTS):
+@contextmanager
+def open_response(url, *, accept, hosts, encoding):
     if urllib.parse.urlsplit(url).scheme != "https":
         raise Problem("Only HTTPS downloads are allowed.")
     if not trusted(url, hosts):
         raise Problem(f"{urllib.parse.urlsplit(url).hostname or 'That link'} isn't a site this app downloads from.")
-    # Ask for compressed JSON: CurseForge project data shrinks about tenfold.
-    headers = {"User-Agent": USER_AGENT, "Accept": accept, "Accept-Encoding": "gzip"}
+    headers = {"User-Agent": USER_AGENT, "Accept": accept, "Accept-Encoding": encoding}
     request = urllib.request.Request(url, headers=headers)
     opener = urllib.request.build_opener(TrustedRedirects(hosts))
     try:
         with opener.open(request, timeout=45) as response:
             if not trusted(response.geturl(), hosts):
                 raise Problem("The download was redirected to a site this app doesn't download from.")
-            data = response.read(limit + 1)
-            if response.headers.get("Content-Encoding", "").lower() == "gzip" and len(data) <= limit:
-                try:
-                    # Cap the unpacked size too, so a small response can't expand without bound.
-                    data = zlib.decompressobj(16 + zlib.MAX_WBITS).decompress(data, limit + 1)
-                except zlib.error:
-                    raise Problem(f"{urllib.parse.urlsplit(url).hostname} sent a damaged response.")
+            yield response
     except urllib.error.HTTPError as error:
         raise Problem(f"{urllib.parse.urlsplit(url).hostname} answered {error.code} {error.reason}.")
-    except (urllib.error.URLError, TimeoutError, OSError) as error:
+    except (OSError, http.client.HTTPException) as error:
         raise Problem(f"Couldn't reach {urllib.parse.urlsplit(url).hostname}: {getattr(error, 'reason', error)}")
+
+
+def fetch(url, limit=64 * 1024 * 1024, accept="application/json", hosts=API_HOSTS):
+    with open_response(url, accept=accept, hosts=hosts, encoding="gzip") as response:
+        data = response.read(limit + 1)
+        if response.headers.get("Content-Encoding", "").lower() == "gzip" and len(data) <= limit:
+            try:
+                # Cap the unpacked size too, so a small response can't expand without bound.
+                data = zlib.decompressobj(16 + zlib.MAX_WBITS).decompress(data, limit + 1)
+            except zlib.error:
+                raise Problem(f"{urllib.parse.urlsplit(url).hostname} sent a damaged response.")
     if len(data) > limit:
         raise Problem("The download is larger than this app accepts.")
     return data
@@ -357,13 +365,37 @@ def curseforge_release(project, game, listed_updated=0, other_games=False):
 
 # --- Archives ---------------------------------------------------------------
 
+def archive_chunks(url):
+    with open_response(url, accept="application/zip, application/octet-stream, */*", hosts=DOWNLOAD_HOSTS,
+                       encoding="identity") as response:
+        while chunk := response.read(1024 * 1024):
+            yield chunk
+
+
 def download(url, destination, md5="", size=0):
-    data = fetch(url, limit=MAX_DOWNLOAD, accept="application/octet-stream, application/zip, */*", hosts=DOWNLOAD_HOSTS)
-    if md5 and hashlib.md5(data).hexdigest() != md5.lower():
-        raise Problem("The download didn't match WoWInterface's checksum. Nothing was installed.")
-    if size and len(data) != size:
-        raise Problem("The download isn't the size CurseForge lists. Nothing was installed.")
-    Path(destination).write_bytes(data)
+    destination = Path(destination)
+    total = 0
+    digest = hashlib.md5() if md5 else None
+    if size > MAX_DOWNLOAD:
+        raise Problem("The addon download exceeds the 4 GiB archive limit.")
+    with tempfile.TemporaryDirectory(dir=destination.parent) as scratch:
+        path = Path(scratch) / "archive"
+        with path.open("wb") as partial:
+            for chunk in archive_chunks(url):
+                total += len(chunk)
+                if total > MAX_DOWNLOAD:
+                    raise Problem("The addon download exceeds the 4 GiB archive limit.")
+                if size and total > size:
+                    raise Problem("The download isn't the size CurseForge lists. Nothing was installed.")
+                partial.write(chunk)
+                if digest:
+                    digest.update(chunk)
+        if size and size != total:
+            raise Problem("The download isn't the size CurseForge lists. Nothing was installed.")
+        if digest and digest.hexdigest() != md5.lower():
+            raise Problem("The download didn't match WoWInterface's checksum. Nothing was installed.")
+        # Publish only the complete, verified archive.
+        path.replace(destination)
     return destination
 
 
@@ -397,7 +429,7 @@ def extract_addons(archive, workspace):
     with bundle:
         members = bundle.infolist()
         if len(members) > MAX_FILES or sum(m.file_size for m in members) > MAX_UNPACKED:
-            raise Problem("The archive is too large to be an addon.")
+            raise Problem("The archive exceeds the extraction limit of 8 GiB or 100,000 entries.")
         for member in members:
             path = PurePosixPath(member.filename.replace("\\", "/"))
             if path.is_absolute() or ".." in path.parts or (member.external_attr >> 16) & 0o170000 == 0o120000:

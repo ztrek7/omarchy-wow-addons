@@ -14,6 +14,28 @@ ScrollView {
     ColumnLayout {
         width: Math.min(root.availableWidth, 760)
         spacing: 14
+        UI.Label { text: "WOW ADDONS MANAGER"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
+        RowLayout {
+            Layout.fillWidth: true
+            UI.Label {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: root.app.request.action === "updateManager" ? "Installing the manager update…" : root.app.managerMessage
+            }
+            UI.ActionButton {
+                text: "Check for update"
+                enabled: !root.app.demo && !root.app.checkingManager && !root.app.restartNeeded && root.app.request.action !== "updateManager"
+                onClicked: root.app.checkManager()
+            }
+            UI.ActionButton {
+                visible: !!root.app.managerRelease.available && !!root.app.managerRelease.installedCopy
+                enabled: !root.app.busy && !root.app.checkingManager
+                primary: true
+                text: "Update to " + (root.app.managerRelease.latest || "")
+                onClicked: root.app.applyManagerUpdate()
+            }
+        }
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: UI.Theme.border }
         UI.Label { text: "GAME VERSION"; color: UI.Theme.muted; font.pixelSize: 9; font.letterSpacing: 1.5 }
         UI.Label { visible: !root.app.setup.flavors.length; Layout.fillWidth: true; text: "No game versions found. Choose the World of Warcraft folder below."; color: UI.Theme.muted; wrapMode: Text.Wrap }
         Repeater {

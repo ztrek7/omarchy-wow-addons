@@ -18,7 +18,7 @@ target = data / "wow-addons" / "app"
 desktop = data / "applications" / "wow-addons.desktop"
 icon = data / "icons/hicolor/scalable/apps/wow-addons.svg"
 RUNTIME = ["App.qml", "InstalledView.qml", "BrowseView.qml", "SettingsView.qml", "backend.py", "catalog.py", "library.py",
-           "sources.py", "wowdir.py", "run", "LICENSE", "README.md"]
+           "manager_update.py", "sources.py", "wowdir.py", "run", "LICENSE", "README.md"]
 
 
 def refresh_launcher():
@@ -52,9 +52,15 @@ def install():
         # resolves qs against the app root, so expose the system module there.
         (stage / "Commons").symlink_to("/usr/share/omarchy/shell/Commons", target_is_directory=True)
         shutil.copytree(source / "assets/sources", stage / "assets/sources")
+        backup = Path(stage_dir) / "previous"
         if target.exists():
-            shutil.rmtree(target)
-        stage.rename(target)
+            target.rename(backup)
+        try:
+            stage.rename(target)
+        except OSError:
+            if backup.exists():
+                backup.rename(target)
+            raise
     icon.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source / "assets/wow-addons.svg", icon)
     desktop.parent.mkdir(parents=True, exist_ok=True)
