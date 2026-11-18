@@ -118,13 +118,18 @@ class Toc(FakeInstall):
         # Classic Era still reads its own file.
         self.assertEqual(wowdir.read_addon(folder, self.game)["interfaces"], [11508, 11509])
 
+    def test_forever_manifest_precedes_mainline_and_generic(self):
+        folder = make_addon(self.addons, "Questie", interface="00000")
+        (folder / "Questie_Mainline.toc").write_text("## Interface: 120105\n")
+        (folder / "Questie_Forever.toc").write_text("## Interface: 16001\n")
+        info = wowdir.read_addon(folder, self.forever())
+        self.assertEqual((info["interfaces"], info["outOfDate"], info["loadable"]), ([16001], False, True))
+
     def test_wow_forever_falls_back_to_mainline_tocs(self):
-        # Forever reads _Camelot, then _Mainline, then Name.toc. There's no _Forever suffix.
         folder = self.addons / "Bar"
         folder.mkdir()
         (folder / "Bar_Mainline.toc").write_text("## Interface: 16001\n## Title: Bar Mainline\n")
         (folder / "Bar_Vanilla.toc").write_text("## Interface: 11507\n## Title: Bar Vanilla\n")
-        (folder / "Bar_Forever.toc").write_text("## Interface: 11507\n## Title: Not a real suffix\n")
         info = wowdir.read_addon(folder, self.forever())
         self.assertEqual((info["title"], info["loadable"], info["outOfDate"]), ("Bar Mainline", True, False))
         self.assertEqual(wowdir.read_addon(folder, self.game)["title"], "Bar Vanilla")
